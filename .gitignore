@@ -1,0 +1,9 @@
+etl_pipeline/etl_pipline/postgresql/*
+etl_pipeline/etl_pipeline/mysql/*
+etl_pipeline/etl_pipeline/minio/*
+etl_pipeline/etl_pipeline/__pycache__/*
+Test/fhv_tripdata_2023-01.csv
+Test/green_tripdata_2023-01.csv
+Test/yellow_tripdata_2023-01.csv
+etl_pipeline/etl_pipeline/.idea/*
+etl_pipeline/etl_pipeline/assets/__pycache__/*
