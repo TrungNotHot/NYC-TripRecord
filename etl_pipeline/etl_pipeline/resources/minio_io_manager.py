@@ -1,9 +1,11 @@
-import os
-import pyarrow as pa
+from typing import Union
 import pandas as pd
 from dagster import IOManager, OutputContext, InputContext
 from minio import Minio
-from typing import Union
+from datetime import datetime
+import os
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 
 def make_bucket(client: Minio, bucket_name):
