@@ -15,7 +15,7 @@ WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
     partitions_def=WEEKLY,
 )
 def bronze_yellow_record(context) -> Output[pd.DataFrame]:
-    query = "SELECT * FROM yellow_record;"
+    query = "SELECT * FROM yellow_record"
     try:
         partition = context.asset_partition_key_for_output()
         partition_by = "tpep_pickup_datetime"
