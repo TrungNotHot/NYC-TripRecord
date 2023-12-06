@@ -12,7 +12,7 @@ MYSQL_CONFIG = {
 }
 MINIO_CONFIG = {
     "endpoint_url": "localhost:9000",
-    "bucket": "warehouse",
+    "bucket": "lakehouse",
     "aws_access_key_id": "minio",
     "aws_secret_access_key": "minio123",
 }
