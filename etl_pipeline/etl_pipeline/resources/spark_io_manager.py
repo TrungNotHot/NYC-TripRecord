@@ -1,7 +1,7 @@
 from dagster import IOManager, OutputContext, InputContext
 from pyspark.sql import SparkSession, DataFrame
 from contextlib import contextmanager
-from datetime import datetime
+
 
 
 @contextmanager
@@ -58,3 +58,6 @@ class SparkIOManager(IOManager):
             context.log.debug(f"Saved {file_name} to {file_path}")
         except Exception as e:
             raise Exception(f"(Spark handle_output) Error while writing output: {e}")
+    
+    def load_input(self, context: InputContext) -> DataFrame:
+        pass

@@ -1,5 +1,4 @@
 from dagster import asset, AssetIn, Output, WeeklyPartitionsDefinition
-from datetime import datetime
 import pandas as pd
 WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
 

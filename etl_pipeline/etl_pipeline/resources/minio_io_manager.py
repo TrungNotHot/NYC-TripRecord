@@ -38,11 +38,6 @@ class MinIOIOManager(IOManager):
         else:
             return f"{key}.parquet", tmp_file_path
 
-    def handle_output(self, context: OutputContext, obj: pd.DataFrame):
-        pass
-
-    def load_input(self, context: InputContext) -> pd.DataFrame:
-        pass
 
     def handle_output(self, context: OutputContext, obj: pd.DataFrame):
         key_name, tmp_file_path = self._get_path(context)
@@ -63,7 +58,7 @@ class MinIOIOManager(IOManager):
         except Exception as e:
             raise e
 
-    def load_input(self, context: "InputContext") -> pd.DataFrame:
+    def load_input(self, context: InputContext) -> pd.DataFrame:
         bucket_name = self._config["bucket"]
         key_name, tmp_file_path = self._get_path(context)
         try:
