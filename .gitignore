@@ -8,4 +8,7 @@ Test/yellow_tripdata_2023-01.csv
 etl_pipeline/etl_pipeline/.idea/*
 etl_pipeline/etl_pipeline/assets/__pycache__/*
 etl_pipeline/etl_pipeline/resources/__pycache__/*
-
+dagster_home/.telemetry/*
+dagster_home/logs/*
+dagster_home/.logs_queue/*
+dagster_home/.nux/*

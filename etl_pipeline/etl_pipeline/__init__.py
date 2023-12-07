@@ -1,17 +1,18 @@
 from dagster import Definitions
-from assets.bronze_layer import bronze_yellow_record, bronze_fhv_record, bronze_green_record
-from resources.mysql_io_manager import MySQLIOManager
-from resources.minio_io_manager import MinIOIOManager
+import os
+from .assets.bronze_layer import bronze_yellow_record, bronze_fhv_record, bronze_green_record
+from .resources.mysql_io_manager import MySQLIOManager
+from .resources.minio_io_manager import MinIOIOManager
 
 MYSQL_CONFIG = {
-    "host": "localhost",
+    "host": "de_mysql",
     "port": 3306,
     "database": "trip_record",
     "user": "admin",
     "password": "admin123",
 }
 MINIO_CONFIG = {
-    "endpoint_url": "localhost:9000",
+    "endpoint_url": "minio:9000",
     "bucket": "lakehouse",
     "aws_access_key_id": "minio",
     "aws_secret_access_key": "minio123",
