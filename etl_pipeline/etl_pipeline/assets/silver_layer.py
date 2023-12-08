@@ -14,7 +14,7 @@ WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
             key_prefix=["bronze", "trip_record"],
         ),
     },
-    io_manager_key="minio_io_manager",
+    io_manager_key="spark_io_manager",
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
