@@ -9,6 +9,7 @@ def get_spark_session(config, run_id="Spark IO Manager"):
     executor_memory = "1g" if run_id != "Spark IO Manager" else "1500m"
     try:
         spark = (
+            # SparkSession.builder.master("spark://spark-master:7077")
             SparkSession.builder.master("local[*]")
             .appName(run_id)
             .config("spark.driver.memory", "2g")
@@ -51,7 +52,9 @@ class SparkIOManager(IOManager):
         if context.has_partition_key:
             file_path += f"/{context.partition_key}"
         file_path += ".parquet"
-        file_name = f"{context.asset_key.path[-1]}"
+        context.log.debug(f"(Spark handle_output) File path: {file_path}")
+        file_name = str(context.asset_key.path[-1])
+        context.log.debug(f"(Spark handle_output) File name: {file_name}")
         
         try:
             obj.write.mode("overwrite").parquet(file_path)
