@@ -1,7 +1,16 @@
 from dagster import Definitions
 import os
-from .assets.bronze_layer import bronze_yellow_record,bronze_fhv_record, bronze_green_record
-from .assets.silver_layer import silver_green_pickup
+from .assets.bronze_layer import (
+    bronze_yellow_record,
+    bronze_fhv_record,
+    bronze_green_record,
+)
+from .assets.silver_layer import (
+    silver_fhv_pickup,
+    silver_fhv_dropoff,
+    silver_fhv_info,
+    silver_green_record,
+)
 from .resources.mysql_io_manager import MySQLIOManager
 from .resources.minio_io_manager import MinIOIOManager
 from .resources.spark_io_manager import SparkIOManager
@@ -33,11 +42,14 @@ defs = Definitions(
         bronze_yellow_record,
         bronze_fhv_record,
         bronze_green_record,
-        silver_green_pickup,
+        silver_fhv_pickup,
+        silver_fhv_dropoff,
+        silver_fhv_info,
+        silver_green_record,
     ],
     resources={
         "mysql_io_manager": MySQLIOManager(MYSQL_CONFIG),
         "minio_io_manager": MinIOIOManager(MINIO_CONFIG),
         "spark_io_manager": SparkIOManager(SPARK_CONFIG),
-    }
+    },
 )

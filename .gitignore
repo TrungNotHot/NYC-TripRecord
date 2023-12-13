@@ -16,3 +16,4 @@ etl_pipeline/etl_pipeline/resources/__pycache__/*
 .idea/*
 etl_pipeline/etl_pipeline/resources/__pycache__/minio_io_manager.cpython-39.pyc
 
+*.csv
