@@ -42,7 +42,7 @@ def get_spark_session(config, run_id="Spark IO Manager"):
 
 class SparkIOManager(IOManager):
     def __init__(self, config):
-        self.config = config
+        self._config = config
 
     def handle_output(self, context: OutputContext, obj: DataFrame):
         # Write output to s3a (MinIO)
