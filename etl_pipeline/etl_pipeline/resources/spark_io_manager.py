@@ -3,7 +3,6 @@ from pyspark.sql import SparkSession, DataFrame
 from contextlib import contextmanager
 
 
-
 @contextmanager
 def get_spark_session(config, run_id="Spark IO Manager"):
     executor_memory = "1g" if run_id != "Spark IO Manager" else "1500m"
@@ -39,10 +38,12 @@ def get_spark_session(config, run_id="Spark IO Manager"):
         yield spark
     except Exception as e:
         raise Exception(f"Error while creating spark session: {e}")
+
+
 class SparkIOManager(IOManager):
     def __init__(self, config):
         self.config = config
-    
+
     def handle_output(self, context: OutputContext, obj: DataFrame):
         # Write output to s3a (MinIO)
         context.log.debug("(Spark handle_output) Writing output to MinIO ...")
@@ -52,12 +53,37 @@ class SparkIOManager(IOManager):
             file_path += f"/{context.partition_key}"
         file_path += ".parquet"
         file_name = f"{context.asset_key.path[-1]}"
-        
+
         try:
             obj.write.mode("overwrite").parquet(file_path)
             context.log.debug(f"Saved {file_name} to {file_path}")
         except Exception as e:
             raise Exception(f"(Spark handle_output) Error while writing output: {e}")
-    
+
     def load_input(self, context: InputContext) -> DataFrame:
-        pass
+        context.log.debug(f"Loading input from {context.asset_key.path}...")
+        file_path = "s3a://lakehouse/" + "/".join(context.asset_key.path)
+        if context.has_partition_key:
+            file_path += f"/{context.partition_key}"
+        full_load = (context.metadata or {}).get("full_load", False)
+        if not full_load:
+            file_path += ".parquet"
+
+        try:
+            with get_spark_session(self._config) as spark:
+                df = None
+                if full_load:
+                    tmp_df = spark.read.parquet(file_path + "/*.parquet")
+                    trip_schema = tmp_df.schema
+                    df = (
+                        spark.read.format("parquet")
+                        .options(header=True, inferSchema=False)
+                        .schema(trip_schema)
+                        .load(file_path + "/*.parquet")
+                    )
+                else:
+                    df = spark.read.parquet(file_path)
+                context.log.debug(f"Loaded {df.count()} rows from {file_path}")
+                return df
+        except Exception as e:
+            raise Exception(f"Error while loading input: {e}")
