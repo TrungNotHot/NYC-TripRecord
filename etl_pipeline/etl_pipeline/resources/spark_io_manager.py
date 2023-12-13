@@ -63,4 +63,29 @@ class SparkIOManager(IOManager):
             raise Exception(f"(Spark handle_output) Error while writing output: {e}")
     
     def load_input(self, context: InputContext) -> DataFrame:
-        pass
+        context.log.debug(f"Loading input from {context.asset_key.path}...")
+        file_path = "s3a://lakehouse/" + "/".join(context.asset_key.path)
+        if context.has_partition_key:
+            file_path += f"/{context.partition_key}"
+        full_load = (context.metadata or {}).get("full_load", False)
+        if not full_load:
+            file_path += ".parquet"
+        
+        try:
+            with get_spark_session(self._config) as spark:
+                df = None
+                if full_load:
+                    tmp_df = spark.read.parquet(file_path + "/*.parquet")
+                    trip_schema = tmp_df.schema
+                    df = (
+                        spark.read.format("parquet")
+                        .options(header=True, inferSchema=False)
+                        .schema(trip_schema)
+                        .load(file_path + "/*.parquet")
+                    )
+                else:
+                    df = spark.read.parquet(file_path)
+                context.log.debug(f"Loaded {df.count()} rows from {file_path}")
+                return df
+        except Exception as e:
+            raise Exception(f"Error while loading input: {e}")
