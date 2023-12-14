@@ -1,7 +1,12 @@
 from dagster import Definitions
 import os
+<<<<<<< Updated upstream
 from .assets.bronze_layer import bronze_yellow_record,bronze_fhv_record, bronze_green_record
 from .assets.silver_layer import silver_green_pickup
+=======
+from .assets.bronze_layer import bronze_yellow_record, bronze_fhv_record, bronze_green_record
+from .assets.silver_layer import test_asset ,silver_yellow_pickup, silver_yellow_payment, silver_yellow_dropoff, silver_yellow_tripinfo
+>>>>>>> Stashed changes
 from .resources.mysql_io_manager import MySQLIOManager
 from .resources.minio_io_manager import MinIOIOManager
 from .resources.spark_io_manager import SparkIOManager
@@ -33,7 +38,14 @@ defs = Definitions(
         bronze_yellow_record,
         bronze_fhv_record,
         bronze_green_record,
+<<<<<<< Updated upstream
         silver_green_pickup,
+=======
+        silver_yellow_pickup,
+        silver_yellow_payment,
+        silver_yellow_dropoff,
+        silver_yellow_tripinfo,
+>>>>>>> Stashed changes
     ],
     resources={
         "mysql_io_manager": MySQLIOManager(MYSQL_CONFIG),
