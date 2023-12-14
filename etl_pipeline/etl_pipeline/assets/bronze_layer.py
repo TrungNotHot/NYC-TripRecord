@@ -83,9 +83,17 @@ def bronze_green_record(context) -> Output[pd.DataFrame]:
     key_prefix=["bronze", "trip_record"],
     compute_kind="MySQL",
     group_name="bronze",
+    partitions_def=WEEKLY,
 )
 def bronze_fhv_record(context) -> Output[pd.DataFrame]:
-    query = "SELECT * FROM fhv_record;"
+    query = "SELECT * FROM fhv_record"
+    try:
+        partition = context.asset_partition_key_for_output()
+        partition_by = "pickup_datetime"
+        query += f" WHERE DATE({partition_by}) >= '{partition}' AND DATE({partition_by}) < DATE_ADD('{partition}', INTERVAL 1 WEEK);"
+        context.log.info(f"Partition by {partition_by}: {partition} to 1 week later")
+    except Exception:
+        context.log.info("No partition key found")
     df_data = context.resources.mysql_io_manager.extract_data(query)
     context.log.info(f"Table extracted with shape: {df_data.shape}")
 

@@ -36,7 +36,7 @@ WEEKLY = StaticPartitionsDefinition(weekly_dates)
     group_name="silver",
 )
 def test_asset(
-    context, bronze_green_record: pd.DataFrame
+    context, bronze_green_record
 ) -> Output[DataFrame]:
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -67,186 +67,183 @@ def test_asset(
             },
         )
 
-# FHV assets
-# @asset(
-#     name="silver_fhv_pickup",
-#     description="pick up datetime and Location in fhv taxi trips",
-#     ins={
-#         "bronze_fhv_record": AssetIn(
-#             key_prefix=["bronze", "trip_record"],
-#         ),
-#     },
-#     io_manager_key="spark_io_manager",
-#     key_prefix=["silver", "trip_record"],
-#     compute_kind="PySpark",
-#     group_name="silver",
-# )
-# def silver_fhv_pickup(context, bronze_fhv_record: pd.DataFrame) -> Output[DataFrame]:
-#     config = {
-#         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
-#         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
-#         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
-#     }
+# _______________________________________FHV assets_______________________________________________________
+@asset(
+    name="silver_fhv_pickup",
+    description="pick up datetime and location in fhv taxi trips",
+    ins={
+        "bronze_fhv_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+    partitions_def=WEEKLY,
+)
+def silver_fhv_pickup(context, bronze_fhv_record) -> Output[DataFrame]:
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
 
-#     context.log.debug("(silver_fhv_pickup) Creating spark session ...")
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
 
-#     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-#         context.log.debug(
-#             f"Converted to pandas DataFrame with shape: {bronze_fhv_record.shape}"
-#         )
+        spark_df = spark.createDataFrame(bronze_fhv_record)
+        spark_df.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        # transform
+        select_cols = ["pickup_datetime", "PUlocationID"]
+        spark_df = spark_df.select(select_cols)
+        spark_df = spark_df.dropDuplicates(select_cols)
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("PickUpID", specialID)
+        spark_df = spark_df.withColumnRenamed('PUlocationID','PULocationID')
 
-#         spark_df = spark.createDataFrame(bronze_fhv_record)
-#         spark_df.cache()
-#         context.log.info("Got Spark DataFrame")
-#         spark_df.createOrReplaceTempView("bronze_fhv_record")
-#         sql_stm = """
-#         SELECT 
-#             CONCAT("F", YEAR(pickup_datetime), LPAD(MONTH(pickup_datetime), 2, '0'), FLOOR(RAND() * 1000000)) AS PickUpID,
-#             pickup_datetime, 
-#             PUlocationID
-#         FROM bronze_fhv_record
-#         GROUP BY pickup_datetime, PUlocationID
-#         """
-#         spark_df = spark.sql(sql_stm)
-#         spark_df.unpersist()
+        spark_df.unpersist()
 
-#         return Output(
-#             spark_df,
-#             metadata={
-#                 "table": "silver_fhv_pickup",
-#                 "row_count": spark_df.count(),
-#                 "column_count": len(spark_df.columns),
-#                 "columns": spark_df.columns,
-#             },
-#         )
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_fhv_pickup",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
 
 
-# @asset(
-#     name="silver_fhv_dropoff",
-#     description="drop off datetime and Location in fhv taxi trips",
-#     ins={
-#         "bronze_fhv_record": AssetIn(
-#             key_prefix=["bronze", "trip_record"],
-#         ),
-#     },
-#     io_manager_key="spark_io_manager",
-#     key_prefix=["silver", "trip_record"],
-#     compute_kind="PySpark",
-#     group_name="silver",
-# )
-# def silver_fhv_dropoff(context, bronze_fhv_record: pd.DataFrame) -> Output[DataFrame]:
-#     config = {
-#         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
-#         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
-#         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
-#     }
+@asset(
+    name="silver_fhv_dropoff",
+    description="drop off datetime and location in fhv taxi trips",
+    ins={
+        "bronze_fhv_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+    partitions_def=WEEKLY,
+)
+def silver_fhv_dropoff(context, bronze_fhv_record) -> Output[DataFrame]:
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
 
-#     context.log.debug("(silver_fhv_dropoff) Creating spark session ...")
+    context.log.debug("(silver_fhv_dropoff) Creating spark session ...")
 
-#     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-#         context.log.debug(
-#             f"Converted to pandas DataFrame with shape: {bronze_fhv_record.shape}"
-#         )
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
 
-#         spark_df = spark.createDataFrame(bronze_fhv_record)
-#         spark_df.cache()
-#         context.log.info("Got Spark DataFrame")
-#         spark_df.createOrReplaceTempView("bronze_fhv_record")
-#         sql_stm = """
-#         SELECT 
-#             CONCAT("F", YEAR(dropOff_datetime), LPAD(MONTH(dropOff_datetime), 2, '0'), FLOOR(RAND() * 1000000)) AS DropOffID,
-#             dropOff_datetime, 
-#             DOlocationID
-#         FROM bronze_fhv_record
-#         GROUP BY dropOff_datetime, DOlocationID
-#         """
-#         spark_df = spark.sql(sql_stm)
-#         spark_df.unpersist()
+        spark_df = spark.createDataFrame(bronze_fhv_record)
+        spark_df.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        # transform
+        select_cols = ["dropoff_datetime", "DOlocationID"]
+        spark_df = spark_df.select(select_cols)
+        spark_df = spark_df.dropDuplicates(select_cols)
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("DropOffID", specialID)
+        spark_df = spark_df.withColumnRenamed('DOlocationID','DOLocationID')
 
-#         return Output(
-#             spark_df,
-#             metadata={
-#                 "table": "silver_fhv_dropoff",
-#                 "row_count": spark_df.count(),
-#                 "column_count": len(spark_df.columns),
-#                 "columns": spark_df.columns,
-#             },
-#         )
+        spark_df.unpersist()
+
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_fhv_dropoff",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
 
 
-# @asset(
-#     name="silver_fhv_info",
-#     description="information datetime and Location in fhv taxi trips",
-#     ins={
-#         "bronze_fhv_record": AssetIn(
-#             key_prefix=["bronze", "trip_record"],
-#         ),
-#         "silver_fhv_pickup": AssetIn(
-#             key_prefix=["silver", "trip_record"],
-#             metadata={"full_load": False},
-#         ),
-#         "silver_fhv_dropoff": AssetIn(
-#             key_prefix=["silver", "trip_record"],
-#             metadata={"full_load": False},
-#         ),
-#     },
-#     io_manager_key="spark_io_manager",
-#     key_prefix=["silver", "trip_record"],
-#     compute_kind="PySpark",
-#     group_name="silver",
-# )
-# def silver_fhv_info(
-#     context,
-#     bronze_fhv_record: pd.DataFrame,
-#     silver_fhv_pickup: DataFrame,
-#     silver_fhv_dropoff: DataFrame,
-# ) -> Output[DataFrame]:
-#     config = {
-#         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
-#         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
-#         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
-#     }
+@asset(
+    name="silver_fhv_info",
+    description="trip information in fhv taxi trips",
+    ins={
+        "bronze_fhv_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+        "silver_fhv_pickup": AssetIn(
+            key_prefix=["silver", "trip_record"],
+            # metadata={"full_load": False},
+        ),
+        "silver_fhv_dropoff": AssetIn(
+            key_prefix=["silver", "trip_record"],
+            # metadata={"full_load": False},
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+    partitions_def=WEEKLY,
+)
+def silver_fhv_info(
+    context,
+    bronze_fhv_record,
+    silver_fhv_pickup: DataFrame,
+    silver_fhv_dropoff: DataFrame,
+) -> Output[DataFrame]:
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
 
-#     context.log.debug("(silver_fhv_info) Creating spark session ...")
+    context.log.debug("(silver_fhv_info) Creating spark session ...")
 
-#     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-#         context.log.debug(
-#             f"Converted to pandas DataFrame with shape: {bronze_fhv_record.shape}"
-#         )
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
 
-#         spark_df = spark.createDataFrame(bronze_fhv_record)
-#         spark_df.cache()
-#         context.log.info("Got Spark DataFrame")
-#         spark_df.createOrReplaceTempView("bronze_fhv_record")
-#         silver_fhv_pickup.createOrReplaceTempView("pu")
-#         silver_fhv_dropoff.createOrReplaceTempView("do")
-#         sql_stm = """
-#         SELECT 
-#             pu.PickUpID,
-#             do.DropOffID,
-#             bfr.dispatching_base_num,  
-#             bfr.Affiliated_base_number
-#         FROM bronze_fhv_record AS bfr
-#         LEFT JOIN pu ON pu.pickup_datetime = bfr.pickup_datetime AND pu.PUlocationID = bfr.PUlocationID
-#         LEFT JOIN do ON do.dropOff_datetime = bfr.dropOff_datetime AND do.DOlocationID = bfr.DOlocationID
-#         """
-#         spark_df = spark.sql(sql_stm)
-#         spark_df.unpersist()
-#         return Output(
-#             spark_df,
-#             metadata={
-#                 "table": "silver_fhv_info",
-#                 "row_count": spark_df.count(),
-#                 "column_count": len(spark_df.columns),
-#                 "columns": spark_df.columns,
-#             },
-#         )
+        df_bronze_fhv_record = spark.createDataFrame(bronze_fhv_record)
+        df_bronze_fhv_record.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        # transform
+        df_bronze_fhv_record = df_bronze_fhv_record.withColumnRenamed('PUlocationID','PULocationID') 
+        df_bronze_fhv_record = df_bronze_fhv_record.withColumnRenamed('DOlocationID','DOLocationID')
+        df_bronze_fhv_record = df_bronze_fhv_record.withColumnRenamed('Affiliated_base_number','affiliated_base_number')
+        df_bronze_fhv_record = df_bronze_fhv_record.withColumnRenamed('SR_Flag','sr_flag')
+
+        select_cols_pickup = ["pickup_datetime", "PULocationID"]
+        select_cols_dropoff = ["dropoff_datetime", "DOLocationID"]
+
+        spark_df = (
+            df_bronze_fhv_record
+            .join(silver_fhv_pickup, on = select_cols_pickup, how='left')
+            .join(silver_fhv_dropoff, on = select_cols_dropoff, how='left')
+        )
+
+        spark_df =spark_df.select([
+            'PickUpID', 'DropOffID', 
+            'dispatching_base_num', 'affiliated_base_number', 'sr_flag'
+        ])
+
+        df_bronze_fhv_record.unpersist()
+
+
+        spark_df.unpersist()
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_fhv_info",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
 
 
 #___________________________________ Yellow assets_____________________________________________
 @asset(
     name="silver_yellow_pickup",
-    description="pick up datetime and Location in yellow taxi trips",
+    description="pick up datetime and location in yellow taxi trips",
     ins={
         "bronze_yellow_record": AssetIn(
             key_prefix=["bronze", "trip_record"],
@@ -258,7 +255,7 @@ def test_asset(
     group_name="silver",
     partitions_def=WEEKLY,
 )
-def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[DataFrame]:
+def silver_yellow_pickup(context, bronze_yellow_record) -> Output[DataFrame]:
 
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -266,19 +263,17 @@ def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(silver_yellow_pickup) Creating spark session ...")
-
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
         spark_df = spark.createDataFrame(bronze_yellow_record)
         spark_df.cache()
-        context.log.info("Got Spark DataFrame")
+        context.log.info("Got Spark DataFrame, now transforming ...")
         # transform
         select_cols = ["tpep_pickup_datetime", "PULocationID"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        specialID = concat(lit(f"Y{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("PickUpID", specialID)
-        spark_df = spark_df.withColumnRenamed('tpep_pickup_datetime','Pickup_datetime')
+        spark_df = spark_df.withColumnRenamed('tpep_pickup_datetime','pickup_datetime')
         spark_df.unpersist()
 
         return Output(
@@ -294,7 +289,7 @@ def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[
 
 @asset(
     name="silver_yellow_dropoff",
-    description="drop off datetime and Location in yellow taxi trips",
+    description="drop off datetime and location in yellow taxi trips",
     partitions_def=WEEKLY,
     ins={
         "bronze_yellow_record": AssetIn(
@@ -306,7 +301,7 @@ def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_yellow_dropoff(context, bronze_yellow_record: pd.DataFrame) -> Output[DataFrame]:
+def silver_yellow_dropoff(context, bronze_yellow_record) -> Output[DataFrame]:
 
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -314,17 +309,15 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pd.DataFrame) -> Output
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(silver_yellow_dropoff) Creating spark session ...")
-
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
         spark_df = spark.createDataFrame(bronze_yellow_record)
         spark_df.cache()
-        context.log.info("Got Spark DataFrame")
+        context.log.info("Got Spark DataFrame, now transforming ...")
         # transform
         select_cols = ["tpep_dropoff_datetime", "DOLocationID"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        specialID = concat(lit(f"Y{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("DropOffID", specialID)
         spark_df = spark_df.withColumnRenamed('tpep_dropoff_datetime','Dropoff_datetime')
 
@@ -341,7 +334,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pd.DataFrame) -> Output
 
 @asset(
     name="silver_yellow_payment",
-    description="Payment",
+    description="Payment information in yellow taxi trips",
     partitions_def=WEEKLY,
     ins={
         "bronze_yellow_record": AssetIn(
@@ -353,7 +346,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pd.DataFrame) -> Output
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_yellow_payment(context, bronze_yellow_record: pd.DataFrame) -> Output[DataFrame]:
+def silver_yellow_payment(context, bronze_yellow_record) -> Output[DataFrame]:
     
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -361,17 +354,15 @@ def silver_yellow_payment(context, bronze_yellow_record: pd.DataFrame) -> Output
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(silver_yellow_payment) Creating spark session ...")
-
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
         spark_df = spark.createDataFrame(bronze_yellow_record)
         spark_df.cache()
-        context.log.info("Got Spark DataFrame")
+        context.log.info("Got Spark DataFrame, now transforming ...")
         # transform
         select_cols = ["fare_amount", "mta_tax", "improvement_surcharge", "payment_type", "RatecodeID", "extra", "tip_amount", "tolls_amount","total_amount","congestion_surcharge", "airport_fee"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        specialID = concat(lit(f"Y{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("PaymentID", specialID)
         spark_df.unpersist()
         
@@ -388,7 +379,7 @@ def silver_yellow_payment(context, bronze_yellow_record: pd.DataFrame) -> Output
 
 @asset(
     name="silver_yellow_tripinfo",
-    description="info",
+    description="tripinfo in yellow taxi trips",
     partitions_def=WEEKLY,
     ins={
         "bronze_yellow_record": AssetIn(key_prefix=["bronze", "trip_record"]),
@@ -403,7 +394,7 @@ def silver_yellow_payment(context, bronze_yellow_record: pd.DataFrame) -> Output
 )
 def silver_yellow_tripinfo(
     context, 
-    bronze_yellow_record: pd.DataFrame,
+    bronze_yellow_record,
     silver_yellow_pickup: DataFrame,
     silver_yellow_dropoff: DataFrame,
     silver_yellow_payment: DataFrame,
@@ -415,18 +406,17 @@ def silver_yellow_tripinfo(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(silver_yellow_tripinfo) Creating spark session ...")
-
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
     
         df_bronze_yellow_record = spark.createDataFrame(bronze_yellow_record)
         df_bronze_yellow_record.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        # transform
+        df_bronze_yellow_record = df_bronze_yellow_record.withColumnRenamed('tpep_pickup_datetime','pickup_datetime') 
+        df_bronze_yellow_record = df_bronze_yellow_record.withColumnRenamed('tpep_dropoff_datetime','dropoff_datetime')
 
-        df_bronze_yellow_record = df_bronze_yellow_record.withColumnRenamed('tpep_pickup_datetime','Pickup_datetime') 
-        df_bronze_yellow_record = df_bronze_yellow_record.withColumnRenamed('tpep_dropoff_datetime','Dropoff_datetime')
-
-        select_cols_pickup = ["Pickup_datetime", "PULocationID"]
-        select_cols_dropoff = ["Dropoff_datetime", "DOLocationID"]
+        select_cols_pickup = ["pickup_datetime", "PULocationID"]
+        select_cols_dropoff = ["dropoff_datetime", "DOLocationID"]
         select_cols_payment = ["fare_amount", "mta_tax", "improvement_surcharge", "payment_type", "RatecodeID", "extra", "tip_amount", "tolls_amount","total_amount","congestion_surcharge", "airport_fee"]
         spark_df = (
             df_bronze_yellow_record
@@ -446,6 +436,208 @@ def silver_yellow_tripinfo(
             spark_df,
             metadata={
                 "table": "silver_yellow_tripinfo",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
+# ______________________________________________Green assets_______________________________________________________
+@asset(
+    name="silver_green_pickup",
+    description="pick up datetime and location in green taxi trips",
+    ins={
+        "bronze_green_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+)
+def silver_green_pickup(context, bronze_green_record) -> Output[DataFrame]:
+
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
+
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+
+        spark_df = spark.createDataFrame(bronze_green_record)
+        spark_df.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        spark_df = spark_df.withColumnRenamed('lpep_pickup_datetime','pickup_datetime')
+        # transform
+        select_cols = ["pickup_datetime", "PULocationID"]
+        spark_df = spark_df.select(select_cols)
+        spark_df = spark_df.dropDuplicates(select_cols)
+        specialID = monotonically_increasing_id()
+        spark_df = spark_df.withColumn("PickUpID", specialID)
+
+        spark_df.unpersist()
+        
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_green_pickup",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
+    
+
+@asset(
+    name="silver_green_dropoff",
+    description="Drop off datetime and location in green taxi trips",
+    ins={
+        "bronze_green_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+)
+def silver_green_dropoff(context, bronze_green_record) -> Output[DataFrame]:
+
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
+
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+
+        spark_df = spark.createDataFrame(bronze_green_record)
+        spark_df.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        spark_df = spark_df.withColumnRenamed('lpep_dropoff_datetime','dropoff_datetime')
+        # transform
+        select_cols = ["dropoff_datetime", "DOLocationID"]
+        spark_df = spark_df.select(select_cols)
+        spark_df = spark_df.dropDuplicates(select_cols)
+        specialID = monotonically_increasing_id()
+        spark_df = spark_df.withColumn("DropOffID", specialID)
+
+        spark_df.unpersist()
+        
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_green_dropoff",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
+    
+
+@asset(
+    name="silver_green_payment",
+    description="Payment information in green taxi trips",
+    ins={
+        "bronze_green_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+)
+def silver_green_payment(context, bronze_green_record) -> Output[DataFrame]:
+    
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
+
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        spark_df = spark.createDataFrame(bronze_green_record)
+        spark_df.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        # transform
+        select_cols = ["fare_amount", "mta_tax", "improvement_surcharge", "payment_type", "RatecodeID", "extra", "tip_amount", "tolls_amount","total_amount","congestion_surcharge", "ehail_fee"]
+        spark_df = spark_df.select(select_cols)
+        spark_df = spark_df.dropDuplicates(select_cols)
+        specialID = monotonically_increasing_id()
+        spark_df = spark_df.withColumn("PaymentID", specialID)
+        spark_df.unpersist()
+        
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_green_payment",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
+
+
+@asset(
+    name="silver_green_tripinfo",
+    description="tripinfo in green taxi trips",
+    ins={
+        "bronze_green_record": AssetIn(key_prefix=["bronze", "trip_record"]),
+        "silver_green_pickup": AssetIn(key_prefix=["silver", "trip_record"]),
+        "silver_green_dropoff": AssetIn(key_prefix=["silver", "trip_record"]),
+        "silver_green_payment": AssetIn(key_prefix=["silver", "trip_record"]),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+)
+def silver_green_tripinfo(
+    context, 
+    bronze_green_record,
+    silver_green_pickup: DataFrame,
+    silver_green_dropoff: DataFrame,
+    silver_green_payment: DataFrame,
+    ) -> Output[DataFrame]:
+
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
+
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+    
+        df_bronze_green_record = spark.createDataFrame(bronze_green_record)
+        df_bronze_green_record.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
+        # transform
+        df_bronze_green_record = df_bronze_green_record.withColumnRenamed('lpep_pickup_datetime','pickup_datetime') 
+        df_bronze_green_record = df_bronze_green_record.withColumnRenamed('lpep_dropoff_datetime','dropoff_datetime')
+
+        select_cols_pickup = ["pickup_datetime", "PULocationID"]
+        select_cols_dropoff = ["dropoff_datetime", "DOLocationID"]
+        select_cols_payment = ["fare_amount", "mta_tax", "improvement_surcharge", "payment_type", "RatecodeID", "extra", "tip_amount", "tolls_amount","total_amount","congestion_surcharge", "ehail_fee"]
+        spark_df = (
+            df_bronze_green_record
+            .join(silver_green_pickup, on = select_cols_pickup, how='left')
+            .join(silver_green_dropoff, on = select_cols_dropoff, how='left')
+            .join(silver_green_payment, on = select_cols_payment, how='left')
+        )
+
+        spark_df =spark_df.select([
+            'VendorID', 'PickUpID', 'DropOffID', 
+            'PaymentID', 'passenger_count', 'trip_distance', 'store_and_fwd_flag', 'trip_type'
+        ])
+
+        df_bronze_green_record.unpersist()
+
+        return Output(
+            spark_df,
+            metadata={
+                "table": "silver_green_tripinfo",
                 "row_count": spark_df.count(),
                 "column_count": len(spark_df.columns),
                 "columns": spark_df.columns,
