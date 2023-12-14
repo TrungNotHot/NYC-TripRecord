@@ -3,7 +3,7 @@ from dagster import asset, AssetIn, Output, WeeklyPartitionsDefinition
 import pandas as pd
 from pyspark.sql import DataFrame
 from ..resources.spark_io_manager import get_spark_session
-from pyspark.sql.functions import monotonically_increasing_id, lit
+from pyspark.sql.functions import monotonically_increasing_id, lit,concat
 
 WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
 
@@ -86,7 +86,8 @@ def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
         spark_df = spark_df.withColumn("PickUpID", lit(f"F{''.join(context.partition_key.split('-'))}") + monotonically_increasing_id())
-        spark_df = spark_df.withColumnRenamed('tpep_pickup_datetime','Pickup_datetime')
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("PickUpID", specialID)
         spark_df.unpersist()
         return Output(
             spark_df,
@@ -132,7 +133,8 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pd.DataFrame) -> Output
         select_cols = ["tpep_dropoff_datetime", "DOLocationID"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        spark_df = spark_df.withColumn("DropOffID", monotonically_increasing_id())  
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("DropOffID", specialID)  
         spark_df = spark_df.withColumnRenamed('tpep_dropoff_datetime','Dropoff_datetime')
 
         spark_df.unpersist()
@@ -179,7 +181,8 @@ def silver_yellow_payment(context, bronze_yellow_record: pd.DataFrame) -> Output
         select_cols = ["fare_amount", "mta_tax", "improvement_surcharge", "payment_type", "RatecodeID", "extra", "tip_amount", "tolls_amount","total_amount","congestion_surcharge", "airport_fee"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        spark_df = spark_df.withColumn("PaymentID", monotonically_increasing_id())  
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("PaymentID", specialID)
             
         spark_df.unpersist()
         
