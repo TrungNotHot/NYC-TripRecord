@@ -9,7 +9,7 @@ from .assets.silver_layer import (
     silver_fhv_pickup,
     silver_fhv_dropoff,
     silver_fhv_info,
-    silver_green_record,
+    # silver_green_record,
 )
 from .resources.mysql_io_manager import MySQLIOManager
 from .resources.minio_io_manager import MinIOIOManager
@@ -45,7 +45,7 @@ defs = Definitions(
         silver_fhv_pickup,
         silver_fhv_dropoff,
         silver_fhv_info,
-        silver_green_record,
+        # silver_green_record,
     ],
     resources={
         "mysql_io_manager": MySQLIOManager(MYSQL_CONFIG),
