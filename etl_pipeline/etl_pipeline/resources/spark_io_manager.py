@@ -12,9 +12,9 @@ def get_spark_session(config, run_id="Spark IO Manager"):
             # SparkSession.builder.master("spark://spark-master:7077")
             SparkSession.builder.master("local[*]")
             .appName(run_id)
-            .config("spark.driver.memory", "2g")
+            .config("spark.driver.memory", "1g")
             .config("spark.executor.memory", executor_memory)
-            .config("spark.cores.max", "2")
+            .config("spark.cores.max", "4")
             .config("spark.executor.cores", "2")
             .config(
                 "spark.jars",

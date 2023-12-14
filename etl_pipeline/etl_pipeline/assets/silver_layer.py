@@ -1,25 +1,29 @@
 import os
-from dagster import asset, AssetIn, Output, WeeklyPartitionsDefinition
+from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
 import pandas as pd
-<<<<<<< Updated upstream
-from pyspark.sql import DataFrame
-=======
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql import SparkSession
->>>>>>> Stashed changes
 from ..resources.spark_io_manager import get_spark_session
 from pyspark.sql.functions import monotonically_increasing_id, lit, concat
+from datetime import datetime, timedelta
 
-WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
+def generate_weekly_dates(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    
+    current_date = start_date
+    while current_date < end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(weeks=1)
+start_date_str = "2023-01-01"
+end_date_str = "2023-07-01"
 
-<<<<<<< Updated upstream
-@asset(
-    name="silver_green_record",
-=======
+weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
+WEEKLY = StaticPartitionsDefinition(weekly_dates)
+
 
 @asset(
     name="test_asset",
->>>>>>> Stashed changes
     description="pick up datetime and Location in green taxi trips",
     ins={
         "bronze_green_record": AssetIn(
@@ -31,33 +35,14 @@ WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
     compute_kind="PySpark",
     group_name="silver",
 )
-<<<<<<< Updated upstream
-def silver_green_pickup(context, bronze_green_record: pd.DataFrame) -> Output[DataFrame]:
-    
-=======
 def test_asset(
     context, bronze_green_record: pd.DataFrame
 ) -> Output[DataFrame]:
->>>>>>> Stashed changes
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
-<<<<<<< Updated upstream
-
-    context.log.debug("(silver_green_pickup) Creating spark session ...")
-
-    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-        context.log.debug(
-            f"Converted to pandas DataFrame with shape: {bronze_green_record.shape}"
-        )
-
-        spark_df = spark.createDataFrame(bronze_green_record)
-        spark_df.cache()
-        context.log.info("Got Spark DataFrame")
-        # transform
-=======
 
     context.log.debug("(silver_green_pickup) Creating spark session ...")
 
@@ -291,10 +276,9 @@ def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[
         select_cols = ["tpep_pickup_datetime", "PULocationID"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        specialID = concat(lit("F2023"), monotonically_increasing_id())
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("PickUpID", specialID)
         spark_df = spark_df.withColumnRenamed('tpep_pickup_datetime','Pickup_datetime')
->>>>>>> Stashed changes
         spark_df.unpersist()
 
         return Output(
@@ -305,8 +289,6 @@ def silver_yellow_pickup(context, bronze_yellow_record: pd.DataFrame) -> Output[
                 "column_count": len(spark_df.columns),
                 "columns": spark_df.columns,
             },
-<<<<<<< Updated upstream
-=======
         )
 
 
@@ -342,8 +324,8 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pd.DataFrame) -> Output
         select_cols = ["tpep_dropoff_datetime", "DOLocationID"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        specialID = concat(lit("F2023"), monotonically_increasing_id())
-        spark_df = spark_df.withColumn("PickUpID", specialID)
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("DropOffID", specialID)
         spark_df = spark_df.withColumnRenamed('tpep_dropoff_datetime','Dropoff_datetime')
 
         spark_df.unpersist()
@@ -389,8 +371,8 @@ def silver_yellow_payment(context, bronze_yellow_record: pd.DataFrame) -> Output
         select_cols = ["fare_amount", "mta_tax", "improvement_surcharge", "payment_type", "RatecodeID", "extra", "tip_amount", "tolls_amount","total_amount","congestion_surcharge", "airport_fee"]
         spark_df = spark_df.select(select_cols)
         spark_df = spark_df.dropDuplicates(select_cols)
-        specialID = concat(lit("F2023"), monotonically_increasing_id())
-        spark_df = spark_df.withColumn("PickUpID", specialID)
+        specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
+        spark_df = spark_df.withColumn("PaymentID", specialID)
         spark_df.unpersist()
         
         return Output(
@@ -433,7 +415,7 @@ def silver_yellow_tripinfo(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(silver_yellow_payment) Creating spark session ...")
+    context.log.debug("(silver_yellow_tripinfo) Creating spark session ...")
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
     
@@ -468,5 +450,4 @@ def silver_yellow_tripinfo(
                 "column_count": len(spark_df.columns),
                 "columns": spark_df.columns,
             },
->>>>>>> Stashed changes
         )

@@ -15,4 +15,6 @@ dagster_home/.nux/*
 etl_pipeline/etl_pipeline/resources/__pycache__/*
 .idea/*
 etl_pipeline/etl_pipeline/resources/__pycache__/minio_io_manager.cpython-39.pyc
-
+Test/*
+Test/bronze_yellow_record_2023-01-01.parquet
+Test/bronze_yellow_record_2023-01-01.parquet

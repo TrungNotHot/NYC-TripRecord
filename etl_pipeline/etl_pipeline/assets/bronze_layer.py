@@ -1,6 +1,20 @@
-from dagster import asset, AssetIn, Output, WeeklyPartitionsDefinition
+from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
 import pandas as pd
-WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
+from datetime import datetime, timedelta
+
+def generate_weekly_dates(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    
+    current_date = start_date
+    while current_date < end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(weeks=1)
+start_date_str = "2023-01-01"
+end_date_str = "2023-07-01"
+
+weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
+WEEKLY = StaticPartitionsDefinition(weekly_dates)
 
 
 @asset(
@@ -18,7 +32,7 @@ def bronze_yellow_record(context) -> Output[pd.DataFrame]:
     try:
         partition = context.asset_partition_key_for_output()
         partition_by = "tpep_pickup_datetime"
-        query += f" WHERE {partition_by} >= {partition} AND {partition_by} < DATE_ADD({partition}, INTERVAL 1 WEEK);"
+        query += f" WHERE DATE({partition_by}) >= '{partition}' AND DATE({partition_by}) < DATE_ADD('{partition}', INTERVAL 1 WEEK);"
         context.log.info(f"Partition by {partition_by}: {partition} to 1 week later")
     except Exception:
         context.log.info("No partition key found")
