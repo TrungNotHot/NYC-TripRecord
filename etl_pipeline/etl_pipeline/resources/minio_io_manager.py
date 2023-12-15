@@ -1,10 +1,9 @@
 from typing import Union
-import pandas as pd
+import polars as pl
 from dagster import IOManager, OutputContext, InputContext
 from minio import Minio
 from datetime import datetime
 import os
-import pyarrow as pa
 import pyarrow.parquet as pq
 
 
@@ -39,9 +38,9 @@ class MinIOIOManager(IOManager):
             return f"{key}.parquet", tmp_file_path
 
 
-    def handle_output(self, context: OutputContext, obj: pd.DataFrame):
+    def handle_output(self, context: OutputContext, obj: pl.DataFrame):
         key_name, tmp_file_path = self._get_path(context)
-        table = pa.Table.from_pandas(obj)
+        table = obj.to_arrow()
         pq.write_table(table, tmp_file_path)
 
         try:
@@ -58,7 +57,7 @@ class MinIOIOManager(IOManager):
         except Exception as e:
             raise e
 
-    def load_input(self, context: InputContext) -> pd.DataFrame:
+    def load_input(self, context: InputContext) -> pl.DataFrame:
         bucket_name = self._config["bucket"]
         key_name, tmp_file_path = self._get_path(context)
         try:
@@ -66,7 +65,7 @@ class MinIOIOManager(IOManager):
             self.minio_client.fget_object(
                 bucket_name, key_name, tmp_file_path,
             )
-            df = pd.read_parquet(tmp_file_path)
+            df = pl.read_parquet(tmp_file_path)
             os.remove(tmp_file_path)
             return df
         except Exception as e:

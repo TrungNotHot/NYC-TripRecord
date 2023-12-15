@@ -1,5 +1,5 @@
 from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
-import pandas as pd
+import polars as pl
 from datetime import datetime, timedelta
 
 def generate_weekly_dates(start_date_str, end_date_str):
@@ -27,7 +27,7 @@ WEEKLY = StaticPartitionsDefinition(weekly_dates)
     group_name="bronze",
     partitions_def=WEEKLY,
 )
-def bronze_yellow_record(context) -> Output[pd.DataFrame]:
+def bronze_yellow_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM yellow_record"
     try:
         partition = context.asset_partition_key_for_output()
@@ -59,7 +59,7 @@ def bronze_yellow_record(context) -> Output[pd.DataFrame]:
     compute_kind="MySQL",
     group_name="bronze",
 )
-def bronze_green_record(context) -> Output[pd.DataFrame]:
+def bronze_green_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM green_record;"
     df_data = context.resources.mysql_io_manager.extract_data(query)
     context.log.info(f"Table extracted with shape: {df_data.shape}")
@@ -85,7 +85,7 @@ def bronze_green_record(context) -> Output[pd.DataFrame]:
     group_name="bronze",
     partitions_def=WEEKLY,
 )
-def bronze_fhv_record(context) -> Output[pd.DataFrame]:
+def bronze_fhv_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM fhv_record"
     try:
         partition = context.asset_partition_key_for_output()
