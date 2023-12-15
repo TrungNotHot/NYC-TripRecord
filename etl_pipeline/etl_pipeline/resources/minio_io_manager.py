@@ -2,7 +2,6 @@ from typing import Union
 import polars as pl
 from dagster import IOManager, OutputContext, InputContext
 from minio import Minio
-from datetime import datetime
 import os
 import pyarrow.parquet as pq
 

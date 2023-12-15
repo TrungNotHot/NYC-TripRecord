@@ -1,8 +1,7 @@
 import os
 from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
-import pandas as pd
+import polars as pl
 from pyspark.sql.dataframe import DataFrame
-from pyspark.sql import SparkSession
 from ..resources.spark_io_manager import get_spark_session
 from pyspark.sql.functions import monotonically_increasing_id, lit, concat
 from datetime import datetime, timedelta
@@ -82,7 +81,7 @@ def test_asset(
     group_name="silver",
     partitions_def=WEEKLY,
 )
-def silver_fhv_pickup(context, bronze_fhv_record) -> Output[DataFrame]:
+def silver_fhv_pickup(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFrame]:
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
@@ -90,7 +89,7 @@ def silver_fhv_pickup(context, bronze_fhv_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-
+        bronze_fhv_record = bronze_fhv_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_fhv_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -129,7 +128,7 @@ def silver_fhv_pickup(context, bronze_fhv_record) -> Output[DataFrame]:
     group_name="silver",
     partitions_def=WEEKLY,
 )
-def silver_fhv_dropoff(context, bronze_fhv_record) -> Output[DataFrame]:
+def silver_fhv_dropoff(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFrame]:
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
@@ -139,7 +138,7 @@ def silver_fhv_dropoff(context, bronze_fhv_record) -> Output[DataFrame]:
     context.log.debug("(silver_fhv_dropoff) Creating spark session ...")
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-
+        bronze_fhv_record =   bronze_fhv_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_fhv_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -188,7 +187,7 @@ def silver_fhv_dropoff(context, bronze_fhv_record) -> Output[DataFrame]:
 )
 def silver_fhv_info(
     context,
-    bronze_fhv_record,
+    bronze_fhv_record: pl.DataFrame,
     silver_fhv_pickup: DataFrame,
     silver_fhv_dropoff: DataFrame,
 ) -> Output[DataFrame]:
@@ -201,7 +200,7 @@ def silver_fhv_info(
     context.log.debug("(silver_fhv_info) Creating spark session ...")
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-
+        bronze_fhv_record =   bronze_fhv_record.to_pandas()
         df_bronze_fhv_record = spark.createDataFrame(bronze_fhv_record)
         df_bronze_fhv_record.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -255,7 +254,7 @@ def silver_fhv_info(
     group_name="silver",
     partitions_def=WEEKLY,
 )
-def silver_yellow_pickup(context, bronze_yellow_record) -> Output[DataFrame]:
+def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[DataFrame]:
 
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -264,6 +263,7 @@ def silver_yellow_pickup(context, bronze_yellow_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_yellow_record = bronze_yellow_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_yellow_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -301,7 +301,7 @@ def silver_yellow_pickup(context, bronze_yellow_record) -> Output[DataFrame]:
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_yellow_dropoff(context, bronze_yellow_record) -> Output[DataFrame]:
+def silver_yellow_dropoff(context, bronze_yellow_record: pl.DataFrame) -> Output[DataFrame]:
 
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -310,6 +310,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_yellow_record = bronze_yellow_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_yellow_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -346,7 +347,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record) -> Output[DataFrame]:
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_yellow_payment(context, bronze_yellow_record) -> Output[DataFrame]:
+def silver_yellow_payment(context, bronze_yellow_record: pl.DataFrame) -> Output[DataFrame]:
     
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -355,6 +356,7 @@ def silver_yellow_payment(context, bronze_yellow_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_yellow_record = bronze_yellow_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_yellow_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -394,7 +396,7 @@ def silver_yellow_payment(context, bronze_yellow_record) -> Output[DataFrame]:
 )
 def silver_yellow_tripinfo(
     context, 
-    bronze_yellow_record,
+    bronze_yellow_record: pl.DataFrame,
     silver_yellow_pickup: DataFrame,
     silver_yellow_dropoff: DataFrame,
     silver_yellow_payment: DataFrame,
@@ -407,7 +409,7 @@ def silver_yellow_tripinfo(
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-    
+        bronze_yellow_record = bronze_yellow_record.to_pandas()
         df_bronze_yellow_record = spark.createDataFrame(bronze_yellow_record)
         df_bronze_yellow_record.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -455,7 +457,7 @@ def silver_yellow_tripinfo(
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_green_pickup(context, bronze_green_record) -> Output[DataFrame]:
+def silver_green_pickup(context, bronze_green_record: pl.DataFrame) -> Output[DataFrame]:
 
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -464,7 +466,7 @@ def silver_green_pickup(context, bronze_green_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-
+        bronze_green_record = bronze_green_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_green_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -502,7 +504,7 @@ def silver_green_pickup(context, bronze_green_record) -> Output[DataFrame]:
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_green_dropoff(context, bronze_green_record) -> Output[DataFrame]:
+def silver_green_dropoff(context, bronze_green_record: pl.DataFrame) -> Output[DataFrame]:
 
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -511,7 +513,7 @@ def silver_green_dropoff(context, bronze_green_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-
+        bronze_green_record = bronze_green_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_green_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -549,7 +551,7 @@ def silver_green_dropoff(context, bronze_green_record) -> Output[DataFrame]:
     compute_kind="PySpark",
     group_name="silver",
 )
-def silver_green_payment(context, bronze_green_record) -> Output[DataFrame]:
+def silver_green_payment(context, bronze_green_record: pl.DataFrame) -> Output[DataFrame]:
     
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
@@ -558,6 +560,7 @@ def silver_green_payment(context, bronze_green_record) -> Output[DataFrame]:
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_green_record = bronze_green_record.to_pandas()
         spark_df = spark.createDataFrame(bronze_green_record)
         spark_df.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
@@ -596,7 +599,7 @@ def silver_green_payment(context, bronze_green_record) -> Output[DataFrame]:
 )
 def silver_green_tripinfo(
     context, 
-    bronze_green_record,
+    bronze_green_record: pl.DataFrame,
     silver_green_pickup: DataFrame,
     silver_green_dropoff: DataFrame,
     silver_green_payment: DataFrame,
@@ -609,7 +612,7 @@ def silver_green_tripinfo(
     }
 
     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-    
+        bronze_green_record = bronze_green_record.to_pandas()
         df_bronze_green_record = spark.createDataFrame(bronze_green_record)
         df_bronze_green_record.cache()
         context.log.info("Got Spark DataFrame, now transforming ...")
