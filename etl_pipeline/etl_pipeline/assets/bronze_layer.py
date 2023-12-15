@@ -10,11 +10,20 @@ def generate_weekly_dates(start_date_str, end_date_str):
     while current_date < end_date:
         yield current_date.strftime("%Y-%m-%d")
         current_date += timedelta(weeks=1)
+def generate_3days_dates(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    
+    current_date = start_date
+    while current_date < end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(days=3)
 start_date_str = "2023-01-01"
 end_date_str = "2023-07-01"
-
+three_days = list(generate_3days_dates(start_date_str, end_date_str))
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)
+THREE_DAYS = StaticPartitionsDefinition(three_days)
 
 
 @asset(
@@ -25,7 +34,7 @@ WEEKLY = StaticPartitionsDefinition(weekly_dates)
     key_prefix=["bronze", "trip_record"],
     compute_kind="MySQL",
     group_name="bronze",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
 def bronze_yellow_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM yellow_record"

@@ -14,11 +14,20 @@ def generate_weekly_dates(start_date_str, end_date_str):
     while current_date < end_date:
         yield current_date.strftime("%Y-%m-%d")
         current_date += timedelta(weeks=1)
+def generate_3days_dates(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    
+    current_date = start_date
+    while current_date < end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(days=3)
 start_date_str = "2023-01-01"
 end_date_str = "2023-07-01"
-
+three_days = list(generate_3days_dates(start_date_str, end_date_str))
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)
+THREE_DAYS = StaticPartitionsDefinition(three_days)
 
 
 @asset(
@@ -252,7 +261,7 @@ def silver_fhv_info(
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
 def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[DataFrame]:
 
@@ -290,7 +299,7 @@ def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[
 @asset(
     name="silver_yellow_dropoff",
     description="drop off datetime and location in yellow taxi trips",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
     ins={
         "bronze_yellow_record": AssetIn(
             key_prefix=["bronze", "trip_record"],
@@ -336,7 +345,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pl.DataFrame) -> Output
 @asset(
     name="silver_yellow_payment",
     description="Payment information in yellow taxi trips",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
     ins={
         "bronze_yellow_record": AssetIn(
             key_prefix=["bronze", "trip_record"],
@@ -382,7 +391,7 @@ def silver_yellow_payment(context, bronze_yellow_record: pl.DataFrame) -> Output
 @asset(
     name="silver_yellow_tripinfo",
     description="tripinfo in yellow taxi trips",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
     ins={
         "bronze_yellow_record": AssetIn(key_prefix=["bronze", "trip_record"]),
         "silver_yellow_pickup": AssetIn(key_prefix=["silver", "trip_record"]),
