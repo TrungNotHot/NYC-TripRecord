@@ -12,9 +12,9 @@ def get_spark_session(config, run_id="Spark IO Manager"):
             # SparkSession.builder.master("spark://spark-master:7077")
             SparkSession.builder.master("local[*]")
             .appName(run_id)
-            .config("spark.driver.memory", "2g")
+            .config("spark.driver.memory", "1g")
             .config("spark.executor.memory", executor_memory)
-            .config("spark.cores.max", "2")
+            .config("spark.cores.max", "4")
             .config("spark.executor.cores", "2")
             .config(
                 "spark.jars",
@@ -51,7 +51,7 @@ class SparkIOManager(IOManager):
         file_path = "s3a://lakehouse/" + "/".join(context.asset_key.path)
         if context.has_partition_key:
             file_path += f"/{context.partition_key}"
-        file_path += ".parquet"
+        #file_path += ".parquet"
         context.log.debug(f"(Spark handle_output) File path: {file_path}")
         file_name = str(context.asset_key.path[-1])
         context.log.debug(f"(Spark handle_output) File name: {file_name}")
@@ -65,17 +65,20 @@ class SparkIOManager(IOManager):
     def load_input(self, context: InputContext) -> DataFrame:
         context.log.debug(f"Loading input from {context.asset_key.path}...")
         file_path = "s3a://lakehouse/" + "/".join(context.asset_key.path)
-        if context.has_partition_key:
-            file_path += f"/{context.partition_key}"
+        check_partition = (context.metadata or {}).get("partition", True) # nếu ko thấy metadata có thông báo partition thì tự động = true
+        if check_partition == True:  # cần thêm partition vao metadata
+            if context.has_partition_key:
+                file_path += f"/{context.partition_key}"
         full_load = (context.metadata or {}).get("full_load", False)
         if not full_load:
-            file_path += ".parquet"
-        
+           file_path += ".parquet"
+        context.log.debug(f"full_load {file_path}...{full_load}{check_partition}")
         try:
             with get_spark_session(self._config) as spark:
                 df = None
                 if full_load:
-                    tmp_df = spark.read.parquet(file_path + "/*.parquet")
+                    #tmp_df = spark.read.parquet(file_path + "/*.parquet")
+                    tmp_df = spark.read.parquet(file_path)
                     trip_schema = tmp_df.schema
                     df = (
                         spark.read.format("parquet")
