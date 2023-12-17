@@ -40,6 +40,7 @@ def get_spark_session(config, run_id="Spark IO Manager"):
         yield spark
     except Exception as e:
         raise Exception(f"Error while creating spark session: {e}")
+    
 class SparkIOManager(IOManager):
     def __init__(self, config):
         self._config = config

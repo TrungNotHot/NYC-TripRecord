@@ -9,3 +9,5 @@ down:
 
 restart:
 	make down && make up
+rebuild:
+	make down && make build && make up
