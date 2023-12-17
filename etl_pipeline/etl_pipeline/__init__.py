@@ -6,6 +6,7 @@ from .assets.silver_layer import (test_asset ,
                                   silver_fhv_dropoff, silver_fhv_pickup, silver_fhv_info,
                                   silver_green_dropoff, silver_green_pickup, silver_green_tripinfo, silver_green_payment
                                   )
+from .assets.gold_layer import gold_pickup, gold_dropoff, gold_payment, gold_info
 from .resources.mysql_io_manager import MySQLIOManager
 from .resources.minio_io_manager import MinIOIOManager
 from .resources.spark_io_manager import SparkIOManager
@@ -48,6 +49,10 @@ defs = Definitions(
         silver_green_pickup,
         silver_green_tripinfo,
         silver_green_payment,
+        gold_pickup, 
+        gold_dropoff, 
+        gold_payment, 
+        gold_info,
     ],
     resources={
         "mysql_io_manager": MySQLIOManager(MYSQL_CONFIG),

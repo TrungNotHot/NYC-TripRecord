@@ -88,7 +88,7 @@ def test_asset(
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
 def silver_fhv_pickup(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFrame]:
     config = {
@@ -135,7 +135,7 @@ def silver_fhv_pickup(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFr
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
 def silver_fhv_dropoff(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFrame]:
     config = {
@@ -192,7 +192,7 @@ def silver_fhv_dropoff(context, bronze_fhv_record: pl.DataFrame) -> Output[DataF
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
 def silver_fhv_info(
     context,
@@ -288,7 +288,7 @@ def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[
         return Output(
             spark_df,
             metadata={
-                "table": "silver_green_pickup",
+                "table": "silver_yellow_pickup",
                 "row_count": spark_df.count(),
                 "column_count": len(spark_df.columns),
                 "columns": spark_df.columns,
