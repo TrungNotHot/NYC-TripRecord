@@ -3,8 +3,9 @@ from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
 import polars as pl
 from pyspark.sql.dataframe import DataFrame
 from ..resources.spark_io_manager import get_spark_session
-from pyspark.sql.functions import monotonically_increasing_id, lit, concat
+from pyspark.sql.functions import lit
 from datetime import datetime, timedelta
+
 
 def generate_weekly_dates(start_date_str, end_date_str):
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
@@ -28,6 +29,7 @@ three_days = list(generate_3days_dates(start_date_str, end_date_str))
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)
 THREE_DAYS = StaticPartitionsDefinition(three_days)
+
 
 @asset(
     name="gold_pickup",
@@ -53,13 +55,13 @@ THREE_DAYS = StaticPartitionsDefinition(three_days)
     group_name="gold",
     partitions_def=THREE_DAYS,
 )
-
 def gold_pickup(
     context,
     silver_yellow_pickup: DataFrame,
     silver_green_pickup: DataFrame,
     silver_fhv_pickup: DataFrame,
 ) -> Output[DataFrame]:
+    
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
@@ -93,6 +95,7 @@ def gold_pickup(
             },
         )
 
+
 @asset(
     name="gold_dropoff",
     description="gold dropoff ",
@@ -117,13 +120,13 @@ def gold_pickup(
     group_name="gold",
     partitions_def=THREE_DAYS,
 )
-
 def gold_dropoff(
     context,
     silver_yellow_dropoff: DataFrame,
     silver_green_dropoff: DataFrame,
     silver_fhv_dropoff: DataFrame,
 ) -> Output[DataFrame]:
+    
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
@@ -157,6 +160,7 @@ def gold_dropoff(
             },
         )
 
+
 @asset(
     name="gold_payment",
     description="gold payment ",
@@ -177,12 +181,12 @@ def gold_dropoff(
     group_name="gold",
     partitions_def=THREE_DAYS,
 )
-
 def gold_payment(
     context,
     silver_yellow_payment: DataFrame,
     silver_green_payment: DataFrame,
 ) -> Output[DataFrame]:
+    
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
@@ -218,6 +222,7 @@ def gold_payment(
             },
         )
 
+
 @asset(
     name="gold_info",
     description="gold_info ",
@@ -242,7 +247,6 @@ def gold_payment(
     group_name="gold",
     partitions_def=THREE_DAYS,
 )
-
 def gold_info(
     context,
     silver_yellow_tripinfo: DataFrame,
