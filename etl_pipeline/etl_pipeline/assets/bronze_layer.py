@@ -92,7 +92,7 @@ def bronze_green_record(context) -> Output[pl.DataFrame]:
     key_prefix=["bronze", "trip_record"],
     compute_kind="MySQL",
     group_name="bronze",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
 def bronze_fhv_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM fhv_record"
