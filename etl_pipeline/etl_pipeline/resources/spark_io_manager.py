@@ -66,13 +66,13 @@ class SparkIOManager(IOManager):
     def load_input(self, context: InputContext) -> DataFrame:
         context.log.debug(f"Loading input from {context.asset_key.path}...")
         file_path = "s3a://lakehouse/" + "/".join(context.asset_key.path)
-        check_partition = (context.metadata or {}).get("partition", True) # nếu ko thấy metadata có thông báo partition thì tự động = true
-        if check_partition == True:  # cần thêm partition vao metadata
+        check_partition = (context.metadata or {}).get("partition", True) 
+        if check_partition == True:  
             if context.has_partition_key:
                 file_path += f"/{context.partition_key}"
         full_load = (context.metadata or {}).get("full_load", False)
-        if not full_load:
-           file_path += ".parquet"
+        # if not full_load:
+        #    file_path += ".parquet"
         context.log.debug(f"full_load {file_path}...{full_load}{check_partition}")
         try:
             with get_spark_session(self._config) as spark:
