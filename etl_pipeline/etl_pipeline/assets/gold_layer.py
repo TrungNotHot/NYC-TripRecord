@@ -253,6 +253,7 @@ def gold_info(
     silver_green_tripinfo: DataFrame,
     silver_fhv_info: DataFrame,
 ) -> Output[DataFrame]:
+    
     config = {
         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
