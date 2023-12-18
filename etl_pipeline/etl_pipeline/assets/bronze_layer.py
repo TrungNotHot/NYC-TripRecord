@@ -1,4 +1,4 @@
-from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
+from dagster import asset, Output, StaticPartitionsDefinition
 import polars as pl
 from datetime import datetime, timedelta
 
@@ -19,7 +19,7 @@ def generate_3days_dates(start_date_str, end_date_str):
         yield current_date.strftime("%Y-%m-%d")
         current_date += timedelta(days=3)
 start_date_str = "2023-01-01"
-end_date_str = "2023-07-01"
+end_date_str = "2023-04-01"
 three_days = list(generate_3days_dates(start_date_str, end_date_str))
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)

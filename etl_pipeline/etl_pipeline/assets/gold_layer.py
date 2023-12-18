@@ -24,7 +24,7 @@ def generate_3days_dates(start_date_str, end_date_str):
         yield current_date.strftime("%Y-%m-%d")
         current_date += timedelta(days=3)
 start_date_str = "2023-01-01"
-end_date_str = "2023-07-01"
+end_date_str = "2023-04-01"
 three_days = list(generate_3days_dates(start_date_str, end_date_str))
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)
@@ -270,7 +270,7 @@ def gold_info(
     key_prefix=["gold", "trip_record"],
     compute_kind="PySpark",
     group_name="gold",
-    partitions_def=THREE_DAYS,
+    # partitions_def=THREE_DAYS,
 )
 def gold_fhv_info(
     context,

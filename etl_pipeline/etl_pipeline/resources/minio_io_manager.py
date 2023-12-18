@@ -60,7 +60,7 @@ class MinIOIOManager(IOManager):
         bucket_name = self._config["bucket"]
         key_name, tmp_file_path = self._get_path(context)
         try:
-            context.log.info(f"(MinIO load_input) from key_name: {key_name}")
+            context.log.info(f"(MinIO load_input) from key_name is {key_name}")
             self.minio_client.fget_object(
                 bucket_name, key_name, tmp_file_path,
             )
