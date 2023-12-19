@@ -161,4 +161,4 @@ Bao gồm các assets:
 
 ## IV. Result - Visualize
 
-![](images/dashboard.png)
+![](images/result.png)
