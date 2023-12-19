@@ -1,6 +1,29 @@
-from dagster import asset, AssetIn, Output, WeeklyPartitionsDefinition
-import pandas as pd
-WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
+from dagster import asset, Output, StaticPartitionsDefinition
+import polars as pl
+from datetime import datetime, timedelta
+
+def generate_weekly_dates(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    
+    current_date = start_date
+    while current_date < end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(weeks=1)
+def generate_3days_dates(start_date_str, end_date_str):
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+    
+    current_date = start_date
+    while current_date < end_date:
+        yield current_date.strftime("%Y-%m-%d")
+        current_date += timedelta(days=3)
+start_date_str = "2023-01-01"
+end_date_str = "2023-04-01"
+three_days = list(generate_3days_dates(start_date_str, end_date_str))
+weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
+WEEKLY = StaticPartitionsDefinition(weekly_dates)
+THREE_DAYS = StaticPartitionsDefinition(three_days)
 
 
 @asset(
@@ -11,14 +34,14 @@ WEEKLY = WeeklyPartitionsDefinition(start_date="2023-01-01")
     key_prefix=["bronze", "trip_record"],
     compute_kind="MySQL",
     group_name="bronze",
-    partitions_def=WEEKLY,
+    partitions_def=THREE_DAYS,
 )
-def bronze_yellow_record(context) -> Output[pd.DataFrame]:
+def bronze_yellow_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM yellow_record"
     try:
         partition = context.asset_partition_key_for_output()
         partition_by = "tpep_pickup_datetime"
-        query += f" WHERE {partition_by} >= {partition} AND {partition_by} < DATE_ADD({partition}, INTERVAL 1 WEEK);"
+        query += f" WHERE DATE({partition_by}) >= '{partition}' AND DATE({partition_by}) < DATE_ADD('{partition}', INTERVAL 1 WEEK);"
         context.log.info(f"Partition by {partition_by}: {partition} to 1 week later")
     except Exception:
         context.log.info("No partition key found")
@@ -45,7 +68,7 @@ def bronze_yellow_record(context) -> Output[pd.DataFrame]:
     compute_kind="MySQL",
     group_name="bronze",
 )
-def bronze_green_record(context) -> Output[pd.DataFrame]:
+def bronze_green_record(context) -> Output[pl.DataFrame]:
     query = "SELECT * FROM green_record;"
     df_data = context.resources.mysql_io_manager.extract_data(query)
     context.log.info(f"Table extracted with shape: {df_data.shape}")
@@ -69,9 +92,17 @@ def bronze_green_record(context) -> Output[pd.DataFrame]:
     key_prefix=["bronze", "trip_record"],
     compute_kind="MySQL",
     group_name="bronze",
+    partitions_def=THREE_DAYS,
 )
-def bronze_fhv_record(context) -> Output[pd.DataFrame]:
-    query = "SELECT * FROM fhv_record;"
+def bronze_fhv_record(context) -> Output[pl.DataFrame]:
+    query = "SELECT * FROM fhv_record"
+    try:
+        partition = context.asset_partition_key_for_output()
+        partition_by = "pickup_datetime"
+        query += f" WHERE DATE({partition_by}) >= '{partition}' AND DATE({partition_by}) < DATE_ADD('{partition}', INTERVAL 1 WEEK);"
+        context.log.info(f"Partition by {partition_by}: {partition} to 1 week later")
+    except Exception:
+        context.log.info("No partition key found")
     df_data = context.resources.mysql_io_manager.extract_data(query)
     context.log.info(f"Table extracted with shape: {df_data.shape}")
 

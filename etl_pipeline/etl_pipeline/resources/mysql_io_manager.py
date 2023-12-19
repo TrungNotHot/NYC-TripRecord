@@ -1,34 +1,27 @@
-import pandas as pd
-from dagster import IOManager, OutputContext, InputContext
-from sqlalchemy import create_engine
-from contextlib import contextmanager
+from dagster import IOManager, InputContext, OutputContext
+import polars as pl
 
 
-@contextmanager
-def connect_mysql(config):
-    conn_info = (
-            f"mysql+pymysql://{config['user']}:{config['password']}"
-            + f"@{config['host']}:{config['port']}"
-            + f"/{config['database']}"
+def connect_mysql(config) -> str:
+    conn = (
+        f"mysql://{config['user']}:{config['password']}"
+        + f"@{config['host']}:{config['port']}"
+        + f"/{config['database']}"
     )
-    db_conn = create_engine(conn_info)
-    try:
-        yield db_conn
-    except Exception:
-        print("Error occurred while connecting to MySQL")
+    return conn
 
 
 class MySQLIOManager(IOManager):
     def __init__(self, config):
         self._config = config
 
-    def handle_output(self, context: OutputContext, obj: pd.DataFrame):
+    def handle_output(self, context: "OutputContext", obj: pl.DataFrame):
         pass
 
-    def load_input(self, context: InputContext) -> pd.DataFrame:
+    def load_input(self, context: "InputContext"):
         pass
 
-    def extract_data(self, sql: str) -> pd.DataFrame:
-        with connect_mysql(self._config) as db_conn:
-            pd_data = pd.read_sql_query(sql, db_conn)
-            return pd_data
+    def extract_data(self, sql: str) -> pl.DataFrame:
+        conn = connect_mysql(self._config)
+        df_data = pl.read_database(query=sql, connection_uri=conn)
+        return df_data
