@@ -14,20 +14,12 @@ def generate_weekly_dates(start_date_str, end_date_str):
     while current_date < end_date:
         yield current_date.strftime("%Y-%m-%d")
         current_date += timedelta(weeks=1)
-def generate_3days_dates(start_date_str, end_date_str):
-    start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-    end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
-    
-    current_date = start_date
-    while current_date < end_date:
-        yield current_date.strftime("%Y-%m-%d")
-        current_date += timedelta(days=3)
+
 start_date_str = "2023-01-01"
 end_date_str = "2023-04-01"
-three_days = list(generate_3days_dates(start_date_str, end_date_str))
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)
-THREE_DAYS = StaticPartitionsDefinition(three_days)
+
 
 
 @asset(
@@ -88,7 +80,7 @@ def test_asset(
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
 )
 def silver_fhv_pickup(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFrame]:
     config = {
@@ -109,6 +101,7 @@ def silver_fhv_pickup(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFr
         specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("PickUpID", specialID)
         spark_df = spark_df.withColumnRenamed('PUlocationID','PULocationID')
+        spark_df = spark_df.na.drop(subset=["pickup_datetime"])
 
         spark_df.unpersist()
 
@@ -135,7 +128,7 @@ def silver_fhv_pickup(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFr
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
 )
 def silver_fhv_dropoff(context, bronze_fhv_record: pl.DataFrame) -> Output[DataFrame]:
     config = {
@@ -158,6 +151,7 @@ def silver_fhv_dropoff(context, bronze_fhv_record: pl.DataFrame) -> Output[DataF
         specialID = concat(lit(f"F{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("DropOffID", specialID)
         spark_df = spark_df.withColumnRenamed('DOlocationID','DOLocationID')
+        spark_df = spark_df.na.drop(subset=["dropoff_datetime"])
 
         spark_df.unpersist()
 
@@ -181,18 +175,16 @@ def silver_fhv_dropoff(context, bronze_fhv_record: pl.DataFrame) -> Output[DataF
         ),
         "silver_fhv_pickup": AssetIn(
             key_prefix=["silver", "trip_record"],
-            # metadata={"full_load": False},
         ),
         "silver_fhv_dropoff": AssetIn(
             key_prefix=["silver", "trip_record"],
-            # metadata={"full_load": False},
         ),
     },
     io_manager_key="spark_io_manager",
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
 )
 def silver_fhv_info(
     context,
@@ -232,6 +224,8 @@ def silver_fhv_info(
             'PickUpID', 'DropOffID', 
             'dispatching_base_num', 'affiliated_base_number', 'sr_flag'
         ])
+        spark_df = spark_df.na.drop(subset=['dispatching_base_num'])
+        spark_df = spark_df.na.drop(subset=['affiliated_base_number'])
 
         df_bronze_fhv_record.unpersist()
 
@@ -261,7 +255,7 @@ def silver_fhv_info(
     key_prefix=["silver", "trip_record"],
     compute_kind="PySpark",
     group_name="silver",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
 )
 def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[DataFrame]:
 
@@ -283,6 +277,8 @@ def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[
         specialID = concat(lit(f"Y{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("PickUpID", specialID)
         spark_df = spark_df.withColumnRenamed('tpep_pickup_datetime','pickup_datetime')
+        spark_df = spark_df.na.drop(subset=["pickup_datetime"])
+
         spark_df.unpersist()
 
         return Output(
@@ -299,7 +295,7 @@ def silver_yellow_pickup(context, bronze_yellow_record: pl.DataFrame) -> Output[
 @asset(
     name="silver_yellow_dropoff",
     description="drop off datetime and location in yellow taxi trips",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
     ins={
         "bronze_yellow_record": AssetIn(
             key_prefix=["bronze", "trip_record"],
@@ -330,6 +326,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pl.DataFrame) -> Output
         specialID = concat(lit(f"Y{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("DropOffID", specialID)
         spark_df = spark_df.withColumnRenamed('tpep_dropoff_datetime','Dropoff_datetime')
+        spark_df = spark_df.na.drop(subset=["dropoff_datetime"])
 
         spark_df.unpersist()
         return Output(
@@ -345,7 +342,7 @@ def silver_yellow_dropoff(context, bronze_yellow_record: pl.DataFrame) -> Output
 @asset(
     name="silver_yellow_payment",
     description="Payment information in yellow taxi trips",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
     ins={
         "bronze_yellow_record": AssetIn(
             key_prefix=["bronze", "trip_record"],
@@ -375,6 +372,17 @@ def silver_yellow_payment(context, bronze_yellow_record: pl.DataFrame) -> Output
         spark_df = spark_df.dropDuplicates(select_cols)
         specialID = concat(lit(f"Y{''.join(context.partition_key.split('-'))}"), monotonically_increasing_id())
         spark_df = spark_df.withColumn("PaymentID", specialID)
+        spark_df = spark_df.na.drop(subset=["fare_amount"])
+        spark_df = spark_df.na.drop(subset=["mta_tax"])
+        spark_df = spark_df.na.drop(subset=["improvement_surcharge"])
+        spark_df = spark_df.na.drop(subset=["payment_type"])
+        spark_df = spark_df.na.drop(subset=["RatecodeID"])
+        spark_df = spark_df.na.drop(subset=["extra"])
+        spark_df = spark_df.na.drop(subset=["tip_amount"])
+        spark_df = spark_df.na.drop(subset=["tolls_amount"])
+        spark_df = spark_df.na.drop(subset=["total_amount"])
+        spark_df = spark_df.na.drop(subset=["congestion_surcharge"])
+
         spark_df.unpersist()
         
         return Output(
@@ -391,7 +399,7 @@ def silver_yellow_payment(context, bronze_yellow_record: pl.DataFrame) -> Output
 @asset(
     name="silver_yellow_tripinfo",
     description="tripinfo in yellow taxi trips",
-    partitions_def=THREE_DAYS,
+    partitions_def=WEEKLY,
     ins={
         "bronze_yellow_record": AssetIn(key_prefix=["bronze", "trip_record"]),
         "silver_yellow_pickup": AssetIn(key_prefix=["silver", "trip_record"]),
@@ -440,6 +448,10 @@ def silver_yellow_tripinfo(
             'VendorID', 'PickUpID', 'DropOffID', 
             'PaymentID', 'passenger_count', 'trip_distance', 'store_and_fwd_flag'
         ])
+        spark_df = spark_df.na.drop(subset=['VendorID'])
+        spark_df = spark_df.na.drop(subset=['passenger_count'])
+        spark_df = spark_df.na.drop(subset=['trip_distance'])
+        spark_df = spark_df.na.drop(subset=['store_and_fwd_flag'])
 
         df_bronze_yellow_record.unpersist()
 
@@ -486,6 +498,7 @@ def silver_green_pickup(context, bronze_green_record: pl.DataFrame) -> Output[Da
         spark_df = spark_df.dropDuplicates(select_cols)
         specialID = monotonically_increasing_id()
         spark_df = spark_df.withColumn("PickUpID", specialID)
+        spark_df = spark_df.na.drop(subset=["pickup_datetime"])
 
         spark_df.unpersist()
         
@@ -533,6 +546,7 @@ def silver_green_dropoff(context, bronze_green_record: pl.DataFrame) -> Output[D
         spark_df = spark_df.dropDuplicates(select_cols)
         specialID = monotonically_increasing_id()
         spark_df = spark_df.withColumn("DropOffID", specialID)
+        spark_df = spark_df.na.drop(subset=["dropoff_datetime"])
 
         spark_df.unpersist()
         
@@ -579,6 +593,18 @@ def silver_green_payment(context, bronze_green_record: pl.DataFrame) -> Output[D
         spark_df = spark_df.dropDuplicates(select_cols)
         specialID = monotonically_increasing_id()
         spark_df = spark_df.withColumn("PaymentID", specialID)
+        spark_df = spark_df.na.drop(subset=["fare_amount"])
+        spark_df = spark_df.na.drop(subset=["mta_tax"])
+        spark_df = spark_df.na.drop(subset=["improvement_surcharge"])
+        spark_df = spark_df.na.drop(subset=["payment_type"])
+        spark_df = spark_df.na.drop(subset=["RatecodeID"])
+        spark_df = spark_df.na.drop(subset=["extra"])
+        spark_df = spark_df.na.drop(subset=["tip_amount"])
+        spark_df = spark_df.na.drop(subset=["tolls_amount"])
+        spark_df = spark_df.na.drop(subset=["total_amount"])
+        spark_df = spark_df.na.drop(subset=["congestion_surcharge"])
+
+
         spark_df.unpersist()
         
         return Output(
@@ -643,6 +669,11 @@ def silver_green_tripinfo(
             'VendorID', 'PickUpID', 'DropOffID', 
             'PaymentID', 'passenger_count', 'trip_distance', 'store_and_fwd_flag', 'trip_type'
         ])
+        spark_df = spark_df.na.drop(subset=['VendorID'])
+        spark_df = spark_df.na.drop(subset=['passenger_count'])
+        spark_df = spark_df.na.drop(subset=['trip_distance'])
+        spark_df = spark_df.na.drop(subset=['store_and_fwd_flag'])
+        spark_df = spark_df.na.drop(subset=['trip_type'])
 
         df_bronze_green_record.unpersist()
 
