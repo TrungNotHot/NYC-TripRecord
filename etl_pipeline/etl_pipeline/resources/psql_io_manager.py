@@ -19,11 +19,11 @@ class PostgreSQLIOManager(IOManager):
 
     def handle_output(self, context: OutputContext, obj: pl.DataFrame):
         table = context.asset_key.path[-1]
-        schema = context.asset_key.path[-2]
+        schema_ = context.asset_key.path[-2]
         conn = connect_psql(self._config)
-        obj.write_database(table, conn, if_exists="replace", engine = 'sqlalchemy')
+        obj.write_database(table, conn, if_exists="replace", engine='sqlalchemy')
 
-        print("Write successfully!")
+        context.log.info(f"Uploaded {context.asset_key} to PostgreSQL")
 
     def load_input(self, context: InputContext) -> pl.DataFrame:
         pass

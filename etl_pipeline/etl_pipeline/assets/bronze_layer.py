@@ -118,7 +118,7 @@ def bronze_fhv_record(context) -> Output[pl.DataFrame]:
     group_name="bronze",
 )
 def bronze_long_lat(context) -> Output[pl.DataFrame]:
-    query = "SELECT * FROM long_lat_record;"
+    query = "SELECT * FROM long_lat"
     df_data = context.resources.mysql_io_manager.extract_data(query)
     context.log.info(f"Table extracted with shape: {df_data.shape}")
 
