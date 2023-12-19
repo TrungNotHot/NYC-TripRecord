@@ -133,7 +133,8 @@ Bao gồm các assets:
 
 Bao gồm các assets:
 
--   `gold_pickup` = silver_yellow_pickup + silver_green_pickup + silver_fhv_pickup + bronze_long_lat - `gold_dropoff` = silver_yellow_dropoff + silver_green_dropoff + silver_fhv_dropoff + bronze_long_lat
+-   `gold_pickup` = silver_yellow_pickup + silver_green_pickup + silver_fhv_pickup + bronze_long_lat
+-   `gold_dropoff` = silver_yellow_dropoff + silver_green_dropoff + silver_fhv_dropoff + bronze_long_lat
 -   `gold_payment` = silver_yellow_payment + silver_green_payment
 -   `gold_tripinfo` = silver_yellow_tripinfo + silver_green_tripinfo
 
