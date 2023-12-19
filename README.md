@@ -98,8 +98,17 @@ Một vài xử lí nhỏ khi đọc file `taxizones.shp` để load các dữ l
 ### 4. Silver layer
 
 ![](images/silver1.png)
+
+-   Sivler FHV.
+
 ![](images/silver2.png)
+
+-   Silver Yellow.
+
 ![](images/silver3.png)
+
+-   Silver Green.
+
 Đây là bước xử lý data đã có được từ bronze layer.
 Bao gồm các assets:
 
