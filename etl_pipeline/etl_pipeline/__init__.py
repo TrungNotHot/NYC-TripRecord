@@ -7,9 +7,11 @@ from .assets.silver_layer import (test_asset ,
                                   silver_green_dropoff, silver_green_pickup, silver_green_tripinfo, silver_green_payment
                                   )
 from .assets.gold_layer import gold_pickup, gold_dropoff, gold_payment, gold_info, gold_fhv_info
+from .assets.warehouse import warehouse_pickup, warehouse_dropoff, warehouse_payment, warehouse_tripinfo, warehouse_fhvinfo
 from .resources.mysql_io_manager import MySQLIOManager
 from .resources.minio_io_manager import MinIOIOManager
 from .resources.spark_io_manager import SparkIOManager
+from .resources.psql_io_manager import PostgreSQLIOManager
 
 MYSQL_CONFIG = {
     "host": "de_mysql",
@@ -33,6 +35,14 @@ SPARK_CONFIG = {
     "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
 }
 
+PSQL_CONFIG = {
+    "host": os.getenv("POSTGRES_HOST"),
+    "port": os.getenv("POSTGRES_PORT"),
+    "database": os.getenv("POSTGRES_DB"),
+    "user": os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD"),
+}
+
 defs = Definitions(
     assets=[
         bronze_yellow_record,
@@ -54,10 +64,16 @@ defs = Definitions(
         gold_payment, 
         gold_info,
         gold_fhv_info,
+        warehouse_pickup,
+        warehouse_dropoff,
+        warehouse_payment,
+        warehouse_tripinfo,
+        warehouse_fhvinfo,
     ],
     resources={
         "mysql_io_manager": MySQLIOManager(MYSQL_CONFIG),
         "minio_io_manager": MinIOIOManager(MINIO_CONFIG),
         "spark_io_manager": SparkIOManager(SPARK_CONFIG),
+        "psql_io_manager": PostgreSQLIOManager(PSQL_CONFIG),
     }
 )
