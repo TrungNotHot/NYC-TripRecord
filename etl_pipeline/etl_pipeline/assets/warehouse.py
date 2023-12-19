@@ -1,4 +1,3 @@
-import os
 from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
 import polars as pl
 import pyarrow as pa
@@ -24,9 +23,7 @@ from pyspark.sql import DataFrame
 )
 def warehouse_pickup(context, gold_pickup: DataFrame):
 
-
     context.log.info("Got spark DataFrame, loading to postgres")
-
     df = pl.from_arrow(pa.Table.from_batches(gold_pickup._collect_as_arrow()))
     context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
@@ -38,7 +35,7 @@ def warehouse_pickup(context, gold_pickup: DataFrame):
             "table": "warehouse_pickup",
             "primary_keys": ["PickUpID"],
             "columns": ["PickUpID", "PULocationID", "pickup_datetime"],
-            "row_count": gold_pickup.count(),
+            "row_count": df.shape[0],
         },
     )
 
@@ -53,7 +50,7 @@ def warehouse_pickup(context, gold_pickup: DataFrame):
     },
     metadata={
         "primary_keys": ["DropOffID"],
-        "columns": ["DropOffID", "DOLocationID", "Dropoff_datetime"],
+        "columns": ["DropOffID", "DOLocationID", "dropoff_datetime"],
     },
     io_manager_key="psql_io_manager",
     key_prefix=["gold"],  
@@ -62,9 +59,7 @@ def warehouse_pickup(context, gold_pickup: DataFrame):
 )
 def warehouse_dropoff(context, gold_dropoff: DataFrame):
 
-
     context.log.info("Got spark DataFrame, loading to postgres")
-
     df = pl.from_arrow(pa.Table.from_batches(gold_dropoff._collect_as_arrow()))
     context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
@@ -75,8 +70,8 @@ def warehouse_dropoff(context, gold_dropoff: DataFrame):
             "schema": "gold",
             "table": "warehouse_dropoff",
             "primary_keys": ["DropOffID"],
-            "columns": ["DropOffID", "DOLocationID", "Dropoff_datetime"],
-            "row_count": gold_dropoff.count(),
+            "columns": ["DropOffID", "DOLocationID", "dropoff_datetime"],
+            "row_count": df.shape[0],
         },
     )
 
@@ -100,9 +95,7 @@ def warehouse_dropoff(context, gold_dropoff: DataFrame):
 )
 def warehouse_payment(context, gold_payment: DataFrame):
 
-
     context.log.info("Got spark DataFrame, loading to postgres")
-
     df = pl.from_arrow(pa.Table.from_batches(gold_payment._collect_as_arrow()))
     context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
@@ -140,9 +133,7 @@ def warehouse_payment(context, gold_payment: DataFrame):
 )
 def warehouse_tripinfo(context, gold_info: DataFrame):
 
-
     context.log.info("Got spark DataFrame, loading to postgres")
-
     df = pl.from_arrow(pa.Table.from_batches(gold_info._collect_as_arrow()))
     context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
@@ -154,7 +145,7 @@ def warehouse_tripinfo(context, gold_info: DataFrame):
             "table": "warehouse_tripinfo",
             "primary_keys": ["PickUpID", "DropOffID", "PaymentID"],
             "columns": ["PickUpID", "DropOffID", "PaymentID", "VendorID", "passenger_count", "trip_distance", "store_and_fwd_flag"],
-            "row_count": gold_info.count(),
+            "row_count": df.shape[0],
         },
     )
 
@@ -180,9 +171,7 @@ def warehouse_tripinfo(context, gold_info: DataFrame):
 )
 def warehouse_fhvinfo(context, gold_fhv_info: DataFrame):
 
-
     context.log.info("Got spark DataFrame, loading to postgres")
-
     df = pl.from_arrow(pa.Table.from_batches(gold_fhv_info._collect_as_arrow()))
     context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
@@ -194,7 +183,7 @@ def warehouse_fhvinfo(context, gold_fhv_info: DataFrame):
             "table": "warehouse_fhvinfo",
             "primary_keys": ["PickUpID", "DropOffID"],
             "columns": ["PickUpID", "DropOffID", "dispatching_base_num", "affiliated_base_number", "sr_flag"],
-            "row_count": gold_fhv_info.count(),
+            "row_count": df.shape[0],
         },
     )
 
