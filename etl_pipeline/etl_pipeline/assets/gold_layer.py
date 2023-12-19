@@ -43,24 +43,20 @@ def gold_pickup(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(gold_pickup) Creating spark session ...")
+    context.log.info("Got Spark DataFrame, now transforming ...")
 
-    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+    df_gold_pickup = silver_yellow_pickup.union(silver_green_pickup)
+    df_gold_pickup = df_gold_pickup.union(silver_fhv_pickup)
 
-        context.log.info("Got Spark DataFrame, now transforming ...")
-
-        df_gold_pickup = silver_yellow_pickup.union(silver_green_pickup)
-        df_gold_pickup = df_gold_pickup.union(silver_fhv_pickup)
-
-        return Output(
-            df_gold_pickup,
-            metadata={
-                "table": "gold_pickup",
-                "row_count": df_gold_pickup.count(),
-                "column_count": len(df_gold_pickup.columns),
-                "columns": df_gold_pickup.columns,
-            },
-        )
+    return Output(
+        df_gold_pickup,
+        metadata={
+            "table": "gold_pickup",
+            "row_count": df_gold_pickup.count(),
+            "column_count": len(df_gold_pickup.columns),
+            "columns": df_gold_pickup.columns,
+        },
+    )
 
 
 @asset(
@@ -99,24 +95,20 @@ def gold_dropoff(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(gold_dropoff) Creating spark session ...")
+    context.log.info("Got Spark DataFrame, now transforming ...")
 
-    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+    df_gold_dropoff = silver_yellow_dropoff.union(silver_green_dropoff)
+    df_gold_dropoff = df_gold_dropoff.union(silver_fhv_dropoff)
 
-        context.log.info("Got Spark DataFrame, now transforming ...")
-
-        df_gold_dropoff = silver_yellow_dropoff.union(silver_green_dropoff)
-        df_gold_dropoff = df_gold_dropoff.union(silver_fhv_dropoff)
-
-        return Output(
-            df_gold_dropoff,
-            metadata={
-                "table": "gold_dropoff",
-                "row_count": df_gold_dropoff.count(),
-                "column_count": len(df_gold_dropoff.columns),
-                "columns": df_gold_dropoff.columns,
-            },
-        )
+    return Output(
+        df_gold_dropoff,
+        metadata={
+            "table": "gold_dropoff",
+            "row_count": df_gold_dropoff.count(),
+            "column_count": len(df_gold_dropoff.columns),
+            "columns": df_gold_dropoff.columns,
+        },
+    )
 
 
 @asset(
@@ -150,28 +142,24 @@ def gold_payment(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(gold_payment) Creating spark session ...")
+    context.log.info("Got Spark DataFrame, now transforming ...")
 
-    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+    silver_yellow_payment = silver_yellow_payment.withColumn("airport_fee", lit(""))
+    silver_green_payment = silver_green_payment.withColumn("ehail_fee", lit(""))
 
-        context.log.info("Got Spark DataFrame, now transforming ...")
+    df_gold_payment = silver_yellow_payment.union(silver_green_payment)
+    
+    df_gold_payment = df_gold_payment.withColumn("airport_fee", df_gold_payment["airport_fee"].cast("double"))
 
-        silver_yellow_payment = silver_yellow_payment.withColumn("airport_fee", lit(""))
-        silver_green_payment = silver_green_payment.withColumn("ehail_fee", lit(""))
-
-        df_gold_payment = silver_yellow_payment.union(silver_green_payment)
-        
-        df_gold_payment = df_gold_payment.withColumn("airport_fee", df_gold_payment["airport_fee"].cast("double"))
-
-        return Output(
-            df_gold_payment,
-            metadata={
-                "table": "gold_payment",
-                "row_count": df_gold_payment.count(),
-                "column_count": len(df_gold_payment.columns),
-                "columns": df_gold_payment.columns,
-            },
-        )
+    return Output(
+        df_gold_payment,
+        metadata={
+            "table": "gold_payment",
+            "row_count": df_gold_payment.count(),
+            "column_count": len(df_gold_payment.columns),
+            "columns": df_gold_payment.columns,
+        },
+    )
 
 
 @asset(
@@ -204,28 +192,24 @@ def gold_info(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(gold_info) Creating spark session ...")
+    context.log.info("Got Spark DataFrame, now transforming ...")
+    # transform
 
-    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+    silver_yellow_tripinfo = silver_yellow_tripinfo.withColumn("trip_type", lit(""))
 
-        context.log.info("Got Spark DataFrame, now transforming ...")
-        # transform
+    df_gold_info = silver_yellow_tripinfo.union(silver_green_tripinfo)
+    
+    df_gold_info = df_gold_info.withColumn("trip_type", df_gold_info["trip_type"].cast("double"))
 
-        silver_yellow_tripinfo = silver_yellow_tripinfo.withColumn("trip_type", lit(""))
-
-        df_gold_info = silver_yellow_tripinfo.union(silver_green_tripinfo)
-        
-        df_gold_info = df_gold_info.withColumn("trip_type", df_gold_info["trip_type"].cast("double"))
-
-        return Output(
-            df_gold_info,
-            metadata={
-                "table": "gold_info",
-                "row_count": df_gold_info.count(),
-                "column_count": len(df_gold_info.columns),
-                "columns": df_gold_info.columns,
-            },
-        )
+    return Output(
+        df_gold_info,
+        metadata={
+            "table": "gold_info",
+            "row_count": df_gold_info.count(),
+            "column_count": len(df_gold_info.columns),
+            "columns": df_gold_info.columns,
+        },
+    )
 
 
 @asset(
@@ -255,20 +239,16 @@ def gold_fhv_info(
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
 
-    context.log.debug("(gold_fhv_info) Creating spark session ...")
+    context.log.info("Got Spark DataFrame, now transforming ...")
 
-    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+    df_gold_fhv_info = silver_fhv_info
 
-        context.log.info("Got Spark DataFrame, now transforming ...")
-
-        df_gold_fhv_info = silver_fhv_info
-
-        return Output(
-            df_gold_fhv_info,
-            metadata={
-                "table": "gold_fhv_info",
-                "row_count": df_gold_fhv_info.count(),
-                "column_count": len(df_gold_fhv_info.columns),
-                "columns": df_gold_fhv_info.columns,
-            },
-        )
+    return Output(
+        df_gold_fhv_info,
+        metadata={
+            "table": "gold_fhv_info",
+            "row_count": df_gold_fhv_info.count(),
+            "column_count": len(df_gold_fhv_info.columns),
+            "columns": df_gold_fhv_info.columns,
+        },
+    )
