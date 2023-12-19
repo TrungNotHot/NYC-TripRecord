@@ -1,10 +1,7 @@
 import os
 from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
-import polars as pl
 from pyspark.sql.dataframe import DataFrame
-from ..resources.spark_io_manager import get_spark_session
 from pyspark.sql.functions import lit
-from datetime import datetime, timedelta
 
 
 @asset(
@@ -17,7 +14,7 @@ from datetime import datetime, timedelta
         ),
         "silver_green_pickup": AssetIn(
             key_prefix=["silver", "trip_record"],
-            metadata={"full_load": True, "partition": False},
+            metadata={"full_load": False, "partition": False},
         ),
         "silver_fhv_pickup": AssetIn(
             key_prefix=["silver", "trip_record"],
@@ -47,6 +44,7 @@ def gold_pickup(
 
     df_gold_pickup = silver_yellow_pickup.union(silver_green_pickup)
     df_gold_pickup = df_gold_pickup.union(silver_fhv_pickup)
+    df_gold_pickup = df_gold_pickup.withColumn("pickup_datetime", df_gold_pickup["PULocationID"].cast("int"))
 
     return Output(
         df_gold_pickup,
@@ -69,7 +67,7 @@ def gold_pickup(
         ),
         "silver_green_dropoff": AssetIn(
             key_prefix=["silver", "trip_record"],
-            metadata={"full_load": True, "partition": False},
+            metadata={"full_load": False, "partition": False},
         ),
         "silver_fhv_dropoff": AssetIn(
             key_prefix=["silver", "trip_record"],
@@ -99,6 +97,7 @@ def gold_dropoff(
 
     df_gold_dropoff = silver_yellow_dropoff.union(silver_green_dropoff)
     df_gold_dropoff = df_gold_dropoff.union(silver_fhv_dropoff)
+    df_gold_dropoff = df_gold_dropoff.withColumn("dropoff_datetime", df_gold_dropoff["DOLocationID"].cast("int"))
 
     return Output(
         df_gold_dropoff,
@@ -121,7 +120,7 @@ def gold_dropoff(
         ),
         "silver_green_payment": AssetIn(
             key_prefix=["silver", "trip_record"],
-            metadata={"full_load": True, "partition": False},
+            metadata={"full_load": False, "partition": False},
         ),
 
     },
@@ -172,7 +171,7 @@ def gold_payment(
         ),
         "silver_green_tripinfo": AssetIn(
             key_prefix=["silver", "trip_record"],
-            metadata={"full_load": True, "partition": False},
+            metadata={"full_load": False, "partition": False},
         ),
     },
     io_manager_key="spark_io_manager",
@@ -226,7 +225,6 @@ def gold_info(
     key_prefix=["gold", "trip_record"],
     compute_kind="PySpark",
     group_name="gold",
-    # partitions_def=THREE_DAYS,
 )
 def gold_fhv_info(
     context,
