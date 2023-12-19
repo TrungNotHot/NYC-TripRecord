@@ -2,7 +2,8 @@ import os
 from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import lit
-
+import polars as pl
+from ..resources.spark_io_manager import get_spark_session
 
 @asset(
     name="gold_pickup",
@@ -20,6 +21,10 @@ from pyspark.sql.functions import lit
             key_prefix=["silver", "trip_record"],
             metadata={"full_load": True, "partition": True},
         ),
+        "bronze_long_lat": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+            metadata={"full_load": True, "partition": False},
+        ),
 
     },
     io_manager_key="spark_io_manager",
@@ -32,6 +37,7 @@ def gold_pickup(
     silver_yellow_pickup: DataFrame,
     silver_green_pickup: DataFrame,
     silver_fhv_pickup: DataFrame,
+    bronze_long_lat: pl.DataFrame,
 ) -> Output[DataFrame]:
     
     config = {
@@ -39,22 +45,34 @@ def gold_pickup(
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_long_lat = bronze_long_lat.to_pandas()
+        df_long_lat = spark.createDataFrame(bronze_long_lat)
+        df_long_lat.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
 
-    context.log.info("Got Spark DataFrame, now transforming ...")
+        df_gold_pickup = silver_yellow_pickup.union(silver_green_pickup)
+        df_gold_pickup = df_gold_pickup.union(silver_fhv_pickup)
 
-    df_gold_pickup = silver_yellow_pickup.union(silver_green_pickup)
-    df_gold_pickup = df_gold_pickup.union(silver_fhv_pickup)
-    df_gold_pickup = df_gold_pickup.withColumn("pickup_datetime", df_gold_pickup["PULocationID"].cast("int"))
+        df_gold_pickup = (
+            df_gold_pickup
+            .join(df_long_lat, df_gold_pickup.PULocationID == df_long_lat.LocationID , how='left')
+        ).drop(df_long_lat.LocationID)
 
-    return Output(
-        df_gold_pickup,
-        metadata={
-            "table": "gold_pickup",
-            "row_count": df_gold_pickup.count(),
-            "column_count": len(df_gold_pickup.columns),
-            "columns": df_gold_pickup.columns,
-        },
-    )
+        df_gold_pickup = df_gold_pickup.withColumn("PULocationID", df_gold_pickup["PULocationID"].cast("int")) 
+
+
+        df_long_lat.unpersist()
+
+        return Output(
+            df_gold_pickup,
+            metadata={
+                "table": "gold_pickup",
+                "row_count": df_gold_pickup.count(),
+                "column_count": len(df_gold_pickup.columns),
+                "columns": df_gold_pickup.columns,
+            },
+        )
 
 
 @asset(
@@ -73,7 +91,10 @@ def gold_pickup(
             key_prefix=["silver", "trip_record"],
             metadata={"full_load": True, "partition": True}, 
         ),
-
+        "bronze_long_lat": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+            metadata={"full_load": True, "partition": False},
+        ),
     },
     io_manager_key="spark_io_manager",
     key_prefix=["gold", "trip_record"],
@@ -85,6 +106,7 @@ def gold_dropoff(
     silver_yellow_dropoff: DataFrame,
     silver_green_dropoff: DataFrame,
     silver_fhv_dropoff: DataFrame,
+    bronze_long_lat: pl.DataFrame,
 ) -> Output[DataFrame]:
     
     config = {
@@ -92,22 +114,31 @@ def gold_dropoff(
         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
     }
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_long_lat = bronze_long_lat.to_pandas()
+        df_long_lat = spark.createDataFrame(bronze_long_lat)
+        df_long_lat.cache()
+        context.log.info("Got Spark DataFrame, now transforming ...")
 
-    context.log.info("Got Spark DataFrame, now transforming ...")
+        df_gold_dropoff = silver_yellow_dropoff.union(silver_green_dropoff)
+        df_gold_dropoff = df_gold_dropoff.union(silver_fhv_dropoff)
 
-    df_gold_dropoff = silver_yellow_dropoff.union(silver_green_dropoff)
-    df_gold_dropoff = df_gold_dropoff.union(silver_fhv_dropoff)
-    df_gold_dropoff = df_gold_dropoff.withColumn("dropoff_datetime", df_gold_dropoff["DOLocationID"].cast("int"))
+        df_gold_dropoff = (
+            df_gold_dropoff
+            .join(df_long_lat, df_gold_dropoff.DOLocationID == df_long_lat.LocationID , how='left')
+        )
 
-    return Output(
-        df_gold_dropoff,
-        metadata={
-            "table": "gold_dropoff",
-            "row_count": df_gold_dropoff.count(),
-            "column_count": len(df_gold_dropoff.columns),
-            "columns": df_gold_dropoff.columns,
-        },
-    )
+        df_gold_dropoff = df_gold_dropoff.withColumn("DOLocationID", df_gold_dropoff["DOLocationID"].cast("int"))
+
+        return Output(
+            df_gold_dropoff,
+            metadata={
+                "table": "gold_dropoff",
+                "row_count": df_gold_dropoff.count(),
+                "column_count": len(df_gold_dropoff.columns),
+                "columns": df_gold_dropoff.columns,
+            },
+        )
 
 
 @asset(

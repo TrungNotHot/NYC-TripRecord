@@ -107,3 +107,28 @@ def bronze_fhv_record(context) -> Output[pl.DataFrame]:
         },
     )
 
+
+@asset(
+    name="bronze_long_lat",
+    description="record of taxi_zones",
+    io_manager_key="minio_io_manager",
+    required_resource_keys={"mysql_io_manager"},
+    key_prefix=["bronze", "trip_record"],
+    compute_kind="MySQL",
+    group_name="bronze",
+)
+def bronze_long_lat(context) -> Output[pl.DataFrame]:
+    query = "SELECT * FROM long_lat_record;"
+    df_data = context.resources.mysql_io_manager.extract_data(query)
+    context.log.info(f"Table extracted with shape: {df_data.shape}")
+
+    return Output(
+        df_data,
+        metadata={
+            "table": "long_lat_record",
+            "row_count": df_data.shape[0],
+            "column_count": df_data.shape[1],
+            "columns": str(df_data.columns),
+        },
+    )
+

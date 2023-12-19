@@ -1,6 +1,6 @@
 from dagster import Definitions
 import os
-from .assets.bronze_layer import bronze_yellow_record, bronze_fhv_record, bronze_green_record
+from .assets.bronze_layer import bronze_yellow_record, bronze_fhv_record, bronze_green_record, bronze_long_lat
 from .assets.silver_layer import (test_asset ,
                                   silver_yellow_pickup, silver_yellow_payment, silver_yellow_dropoff, silver_yellow_tripinfo,
                                   silver_fhv_dropoff, silver_fhv_pickup, silver_fhv_info,
@@ -48,6 +48,7 @@ defs = Definitions(
         bronze_yellow_record,
         bronze_fhv_record,
         bronze_green_record,
+        bronze_long_lat,
         silver_yellow_pickup,
         silver_yellow_payment,
         silver_yellow_dropoff,
