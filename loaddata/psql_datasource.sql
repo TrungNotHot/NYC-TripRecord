@@ -2,7 +2,7 @@
 
 --CREATE SCHEMA IF NOT EXISTS warehouse;
 
-CREATE TABLE IF NOT EXISTS warehouse.warehouse_pickup(
+CREATE TABLE IF NOT EXISTS public.warehouse_pickup(
    PickUpID INT NOT NULL PRIMARY KEY, 
    pickup_datetime TIMESTAMP, 
    PULocationID INT,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS warehouse.warehouse_pickup(
 );
 
 -- DropOffID, Dropoff_datetime, DOLocationID
-CREATE TABLE IF NOT EXISTS warehouse.warehouse_dropoff(
+CREATE TABLE IF NOT EXISTS public.warehouse_dropoff(
    DropOffID INT NOT NULL PRIMARY KEY, 
    dropoff_datetime TIMESTAMP, 
    DOLocationID INT,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS warehouse.warehouse_dropoff(
 
 -- PaymentID, Fare_amount, MTA_tax, Improvement_surcharge, Payment_type,
 -- RateCodeID, Extra, Tip_amount, Tolls_amount, Total_amount, Congestion_Surcharge, Airport_fee
-CREATE TABLE IF NOT EXISTS warehouse.warehouse_payment(
+CREATE TABLE IF NOT EXISTS public.warehouse_payment(
    PaymentID INT NOT NULL PRIMARY KEY, 
    fare_amount FLOAT,
    mta_tax FLOAT,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS warehouse.warehouse_payment(
 );
 
 -- VendorID, PickUpID, DropOffID, PaymentID, Passenger_count,Trip_distance, Store_and_fwd_flag,  Trip_type
-CREATE TABLE IF NOT EXISTS warehouse.warehouse_info(
+CREATE TABLE IF NOT EXISTS public.warehouse_info(
    VendorID INT NOT NULL PRIMARY KEY, 
    PickUpID INT, 
    DropOffID INT, 
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS warehouse.warehouse_info(
 );
 
 -- PickUpID, DropOffID, Dispatch_base_num, SR_Flag, Affiliated_base_number
-CREATE TABLE IF NOT EXISTS warehouse.warehouse_fhv_info(
+CREATE TABLE IF NOT EXISTS public.warehouse_fhv_info(
    PickUpID INT, 
    DropOffID INT, 
    dispatch_base_num VARCHAR(10), 

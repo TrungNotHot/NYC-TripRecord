@@ -12,7 +12,7 @@ def generate_weekly_dates(start_date_str, end_date_str):
         current_date += timedelta(weeks=1)
 
 start_date_str = "2023-01-01"
-end_date_str = "2023-04-01"
+end_date_str = "2023-02-01"
 weekly_dates = list(generate_weekly_dates(start_date_str, end_date_str))
 WEEKLY = StaticPartitionsDefinition(weekly_dates)
 
