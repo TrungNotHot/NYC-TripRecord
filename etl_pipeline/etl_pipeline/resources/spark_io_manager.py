@@ -18,8 +18,10 @@ def get_spark_session(config, run_id="Spark IO Manager"):
             .config("spark.executor.cores", "2")
             .config(
                 "spark.jars",
-                "/usr/local/spark/jars/delta-core_2.12-2.2.0.jar,/usr/local/spark/jars/hadoop-aws-3.3.2.jar,/usr/local/spark/jars/delta-storage-2.2.0.jar,/usr/local/spark/jars/aws-java-sdk-1.12.367.jar,/usr/local/spark/jars/s3-2.18.41.jar,/usr/local/spark/jars/aws-java-sdk-bundle-1.11.1026.jar,/usr/local/spark/jars/postgresql-42.7.1.jar",
+                "/usr/local/spark/jars/delta-core_2.12-2.2.0.jar,/usr/local/spark/jars/hadoop-aws-3.3.2.jar,/usr/local/spark/jars/delta-storage-2.2.0.jar,/usr/local/spark/jars/aws-java-sdk-1.12.367.jar,/usr/local/spark/jars/s3-2.18.41.jar,/usr/local/spark/jars/aws-java-sdk-bundle-1.11.1026.jar",
             )
+            .config("spark.driver.extraClassPath", "/usr/local/spark/jars/postgresql-42.7.1.jar")
+            .config("spark.executor.extraClassPath", "/usr/local/spark/jars/postgresql-42.7.1.jar")
             .config(
                 "spark.sql.catalog.spark_catalog",
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog",

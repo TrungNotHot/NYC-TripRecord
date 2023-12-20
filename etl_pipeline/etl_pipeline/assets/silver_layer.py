@@ -22,50 +22,50 @@ WEEKLY = StaticPartitionsDefinition(weekly_dates)
 
 
 
-# @asset(
-#     name="test_asset",
-#     description="pick up datetime and Location in green taxi trips",
-#     ins={
-#         "bronze_green_record": AssetIn(
-#             key_prefix=["bronze", "trip_record"],
-#         ),
-#     },
-#     io_manager_key="spark_io_manager",
-#     key_prefix=["silver", "trip_record"],
-#     compute_kind="PySpark",
-#     group_name="silver",
-# )
-# def test_asset(
-#     context, bronze_green_record
-# ) -> Output[DataFrame]:
-#     config = {
-#         "endpoint_url": os.getenv("MINIO_ENDPOINT"),
-#         "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
-#         "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
-#     }
+@asset(
+    name="test_asset",
+    description="pick up datetime and Location in green taxi trips",
+    ins={
+        "bronze_green_record": AssetIn(
+            key_prefix=["bronze", "trip_record"],
+        ),
+    },
+    io_manager_key="spark_io_manager",
+    key_prefix=["silver", "trip_record"],
+    compute_kind="PySpark",
+    group_name="silver",
+)
+def test_asset(
+    context, bronze_green_record
+) -> Output[DataFrame]:
+    config = {
+        "endpoint_url": os.getenv("MINIO_ENDPOINT"),
+        "minio_access_key": os.getenv("MINIO_ACCESS_KEY"),
+        "minio_secret_key": os.getenv("MINIO_SECRET_KEY"),
+    }
 
-#     context.log.debug("(silver_green_pickup) Creating spark session ...")
+    context.log.debug("(silver_green_pickup) Creating spark session ...")
 
-#     with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
-#         context.log.debug(
-#             f"Converted to pandas DataFrame with shape: {bronze_green_record.shape}"
-#         )
+    with get_spark_session(config, str(context.run.run_id).split("-")[0]) as spark:
+        bronze_green_record = bronze_green_record.to_pandas()
+        context.log.debug(
+            f"Converted to pandas DataFrame with shape: {bronze_green_record.shape}"
+        )
+        spark_df = spark.createDataFrame(bronze_green_record)
+        spark_df.cache()
+        context.log.info("Got Spark DataFrame")
+        # transform
+        spark_df.unpersist()
 
-#         spark_df = spark.createDataFrame(bronze_green_record)
-#         spark_df.cache()
-#         context.log.info("Got Spark DataFrame")
-#         # transform
-#         spark_df.unpersist()
-
-#         return Output(
-#             spark_df,
-#             metadata={
-#                 "table": "test_asset",
-#                 "row_count": spark_df.count(),
-#                 "column_count": len(spark_df.columns),
-#                 "columns": spark_df.columns,
-#             },
-#         )
+        return Output(
+            spark_df,
+            metadata={
+                "table": "test_asset",
+                "row_count": spark_df.count(),
+                "column_count": len(spark_df.columns),
+                "columns": spark_df.columns,
+            },
+        )
 
 # _______________________________________FHV assets_______________________________________________________
 @asset(

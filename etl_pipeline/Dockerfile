@@ -35,7 +35,7 @@ RUN curl -O https://repo1.maven.org/maven2/software/amazon/awssdk/s3/2.18.41/s3-
 # Add required environment variables
 WORKDIR /opt/dagster/app/etl_pipeline  
 COPY requirements.txt /opt/dagster/app/etl_pipeline
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt --default-timeout=300
 COPY . /opt/dagster/app/etl_pipeline
 
 # CMD allows this to be overridden from run launchers or executors that want to run other commands against your repository

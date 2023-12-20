@@ -1,6 +1,4 @@
-from dagster import asset, AssetIn, Output, StaticPartitionsDefinition
-import polars as pl
-import pyarrow as pa
+from dagster import asset, AssetIn, Output
 from pyspark.sql import DataFrame
 
 
@@ -24,20 +22,15 @@ from pyspark.sql import DataFrame
 def warehouse_pickup(context, gold_pickup: DataFrame):
 
     context.log.info("Got spark DataFrame, loading to postgres")
-    df = pl.from_arrow(pa.Table.from_batches(gold_pickup._collect_as_arrow()))
-    context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
     return Output(
-        value=df,
-        # gold_pickup,
+        gold_pickup,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
             "table": "warehouse_pickup",
             "primary_keys": ["PickUpID"],
-            "columns": df.columns,
-            "row_count": df.shape[0],
-            # "row_count": gold_pickup.count(),
+            "row_count": gold_pickup.count(),
         },
     )
 
@@ -62,20 +55,15 @@ def warehouse_pickup(context, gold_pickup: DataFrame):
 def warehouse_dropoff(context, gold_dropoff: DataFrame):
 
     context.log.info("Got spark DataFrame, loading to postgres")
-    df = pl.from_arrow(pa.Table.from_batches(gold_dropoff._collect_as_arrow()))
-    context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
     return Output(
-        value=df,
-        # gold_dropoff,
+        gold_dropoff,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
             "table": "warehouse_dropoff",
             "primary_keys": ["DropOffID"],
-            "columns": df.columns,
-            "row_count": df.shape[0],
-            # "row_count": gold_dropoff.count(),
+            "row_count": gold_dropoff.count(),
         },
     )
 
@@ -100,20 +88,15 @@ def warehouse_dropoff(context, gold_dropoff: DataFrame):
 def warehouse_payment(context, gold_payment: DataFrame):
 
     context.log.info("Got spark DataFrame, loading to postgres")
-    df = pl.from_arrow(pa.Table.from_batches(gold_payment._collect_as_arrow()))
-    context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
     return Output(
-        value=df,
-        # gold_payment,
+        gold_payment,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
             "table": "warehouse_payment",
             "primary_keys": ["PaymentID"],
-            "columns": df.columns,
-            "row_count": df.shape[0],
-            # "row_count": gold_payment.count(),
+            "row_count": gold_payment.count(),
         },
     )
 
@@ -138,20 +121,15 @@ def warehouse_payment(context, gold_payment: DataFrame):
 def warehouse_info(context, gold_info: DataFrame):
 
     context.log.info("Got spark DataFrame, loading to postgres")
-    df = pl.from_arrow(pa.Table.from_batches(gold_info._collect_as_arrow()))
-    context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
     return Output(
-        value=df,
-        # gold_info,
+        gold_info,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
             "table": "warehouse_tripinfo",
             "primary_keys": ["PickUpID", "DropOffID", "PaymentID"],
-            "columns": df.columns,
-            "row_count": df.shape[0],
-            # "row_count": gold_info.count(),
+            "row_count": gold_info.count(),
         },
     )
 
@@ -178,20 +156,15 @@ def warehouse_info(context, gold_info: DataFrame):
 def warehouse_fhv_info(context, gold_fhv_info: DataFrame):
 
     context.log.info("Got spark DataFrame, loading to postgres")
-    df = pl.from_arrow(pa.Table.from_batches(gold_fhv_info._collect_as_arrow()))
-    context.log.debug(f"Got polars DataFrame with shape: {df.shape}")
 
     return Output(
-        value=df,
-        # gold_fhv_info,
+        gold_fhv_info,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
-            "table": "warehouse_fhvinfo",
+            "table": "warehouse_fhv_info",
             "primary_keys": ["PickUpID", "DropOffID"],
-            "columns": df.columns,
-            "row_count": df.shape[0],
-            # "row_count": gold_fhv_info.count(),
+            "row_count": gold_fhv_info.count(),
         },
     )
 
