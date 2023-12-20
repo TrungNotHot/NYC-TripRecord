@@ -29,6 +29,7 @@ def warehouse_pickup(context, gold_pickup: DataFrame):
 
     return Output(
         value=df,
+        # gold_pickup,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
@@ -36,6 +37,7 @@ def warehouse_pickup(context, gold_pickup: DataFrame):
             "primary_keys": ["PickUpID"],
             "columns": df.columns,
             "row_count": df.shape[0],
+            # "row_count": gold_pickup.count(),
         },
     )
 
@@ -65,6 +67,7 @@ def warehouse_dropoff(context, gold_dropoff: DataFrame):
 
     return Output(
         value=df,
+        # gold_dropoff,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
@@ -72,6 +75,7 @@ def warehouse_dropoff(context, gold_dropoff: DataFrame):
             "primary_keys": ["DropOffID"],
             "columns": df.columns,
             "row_count": df.shape[0],
+            # "row_count": gold_dropoff.count(),
         },
     )
 
@@ -101,6 +105,7 @@ def warehouse_payment(context, gold_payment: DataFrame):
 
     return Output(
         value=df,
+        # gold_payment,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
@@ -108,6 +113,7 @@ def warehouse_payment(context, gold_payment: DataFrame):
             "primary_keys": ["PaymentID"],
             "columns": df.columns,
             "row_count": df.shape[0],
+            # "row_count": gold_payment.count(),
         },
     )
 
@@ -137,6 +143,7 @@ def warehouse_info(context, gold_info: DataFrame):
 
     return Output(
         value=df,
+        # gold_info,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
@@ -144,6 +151,7 @@ def warehouse_info(context, gold_info: DataFrame):
             "primary_keys": ["PickUpID", "DropOffID", "PaymentID"],
             "columns": df.columns,
             "row_count": df.shape[0],
+            # "row_count": gold_info.count(),
         },
     )
 
@@ -175,6 +183,7 @@ def warehouse_fhv_info(context, gold_fhv_info: DataFrame):
 
     return Output(
         value=df,
+        # gold_fhv_info,
         metadata={
             "database": "trip_record",
             "schema": "warehouse",
@@ -182,6 +191,7 @@ def warehouse_fhv_info(context, gold_fhv_info: DataFrame):
             "primary_keys": ["PickUpID", "DropOffID"],
             "columns": df.columns,
             "row_count": df.shape[0],
+            # "row_count": gold_fhv_info.count(),
         },
     )
 

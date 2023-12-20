@@ -18,7 +18,7 @@ def get_spark_session(config, run_id="Spark IO Manager"):
             .config("spark.executor.cores", "2")
             .config(
                 "spark.jars",
-                "/usr/local/spark/jars/delta-core_2.12-2.2.0.jar,/usr/local/spark/jars/hadoop-aws-3.3.2.jar,/usr/local/spark/jars/delta-storage-2.2.0.jar,/usr/local/spark/jars/aws-java-sdk-1.12.367.jar,/usr/local/spark/jars/s3-2.18.41.jar,/usr/local/spark/jars/aws-java-sdk-bundle-1.11.1026.jar",
+                "/usr/local/spark/jars/delta-core_2.12-2.2.0.jar,/usr/local/spark/jars/hadoop-aws-3.3.2.jar,/usr/local/spark/jars/delta-storage-2.2.0.jar,/usr/local/spark/jars/aws-java-sdk-1.12.367.jar,/usr/local/spark/jars/s3-2.18.41.jar,/usr/local/spark/jars/aws-java-sdk-bundle-1.11.1026.jar,/usr/local/spark/jars/postgresql-42.7.1.jar",
             )
             .config(
                 "spark.sql.catalog.spark_catalog",
@@ -52,7 +52,6 @@ class SparkIOManager(IOManager):
         file_path = "s3a://lakehouse/" + "/".join(context.asset_key.path)
         if context.has_partition_key:
             file_path += f"/{context.partition_key}"
-        #file_path += ".parquet"
         context.log.debug(f"(Spark handle_output) File path: {file_path}")
         file_name = str(context.asset_key.path[-1])
         context.log.debug(f"(Spark handle_output) File name: {file_name}")
