@@ -126,9 +126,11 @@ def gold_dropoff(
         df_gold_dropoff = (
             df_gold_dropoff
             .join(df_long_lat, df_gold_dropoff.DOLocationID == df_long_lat.LocationID , how='left')
-        )
+        ).drop(df_long_lat.LocationID)
 
         df_gold_dropoff = df_gold_dropoff.withColumn("DOLocationID", df_gold_dropoff["DOLocationID"].cast("int"))
+
+        df_long_lat.unpersist()
 
         return Output(
             df_gold_dropoff,
