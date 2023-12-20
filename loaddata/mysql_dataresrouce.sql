@@ -54,8 +54,8 @@ CREATE TABLE trip_record.green_record
 );
 
 -- load fvh_record dataset
-DROP TABLE IF EXISTS trip_record.fvh_record;
-CREATE TABLE trip_record.fvh_record
+DROP TABLE IF EXISTS trip_record.fhv_record;
+CREATE TABLE trip_record.fhv_record
 (
 	dispatching_base_num VARCHAR(50), 
 	pickup_datetime TIMESTAMP, 
