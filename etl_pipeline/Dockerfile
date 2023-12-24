@@ -15,6 +15,10 @@ RUN curl -O https://dlcdn.apache.org/spark/spark-3.3.3/spark-3.3.3-bin-hadoop3.t
     && rm -rf /usr/local/spark \
     && ln -s /usr/local/spark-3.3.3-bin-hadoop3 /usr/local/spark
 
+# Download PostgreSQL JDBC driver and add it to the Spark classpath
+RUN curl -O https://jdbc.postgresql.org/download/postgresql-42.7.1.jar \
+    && mv postgresql-42.7.1.jar /usr/local/spark/jars
+
 RUN curl -O https://repo1.maven.org/maven2/software/amazon/awssdk/s3/2.18.41/s3-2.18.41.jar \
     && curl -O https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk/1.12.367/aws-java-sdk-1.12.367.jar \
     && curl -O https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.1026/aws-java-sdk-bundle-1.11.1026.jar \
@@ -31,7 +35,7 @@ RUN curl -O https://repo1.maven.org/maven2/software/amazon/awssdk/s3/2.18.41/s3-
 # Add required environment variables
 WORKDIR /opt/dagster/app/etl_pipeline  
 COPY requirements.txt /opt/dagster/app/etl_pipeline
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt --default-timeout=300
 COPY . /opt/dagster/app/etl_pipeline
 
 # CMD allows this to be overridden from run launchers or executors that want to run other commands against your repository
