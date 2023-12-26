@@ -1,4 +1,4 @@
-# NYC-TripRecord (NewYorkCity-TripRecord)
+# NYC taxi tripRecord ETL-pipeline
 
 ## _New York City (NYC)_
 
@@ -6,27 +6,23 @@
 
 ## I. Introduce
 
-### 1. The goal of the project
+### 1. Mục tiêu project
 
-Với chủ đề `Big Data With Spark`, nhóm mình mong muốn xây dựng một hệ thống (data pipeline) đơn giản, vận dụng kỹ thuật `ETL - (Extract - Transform - Load)` nhằm trích xuất, chuyển đổi và sử dụng những dữ liệu trên vào việc đánh giá và phát triển những dự án nhỏ trong tương lai.
-Trong dự án này, nhóm mình sẽ minh họa rõ ràng và chi tiết các quy trình thực hiện `ETL` trên tập dữ liệu `NYC-TripRecord` - một tập dữ liệu mở, phục vụ cho việc học tập và nghiên cứu, Tại sao lại chọn dữ liệu này?
-
--   Nguồn dữ liệu `NYC-TripRecord` là tập dữ liệu tổng quan, chi tiết và khá phù hợp với dự án.
--   Giải thích cụ thể các bước`Extract - Transform - Load` lên trên hệ thống lưu trữ dữ liệu quan trọng.
--   Trình bày những khuynh hướng và quá trình xử lí những dữ liệu thô, sau đó mô phỏng và báo cáo sự đáng tin cậy của dữ liệu thông qua quá trình visualize và reporting.
+Với mục tiêu tìm hiểu và học tập về data engineering và big data, nhóm đã thực hiện project NYC taxi tripRecord. Project tập chung vào quá trình ETL từ database (Mysql) đến datawarehouse (Psql), đồng thời tận dụng sức mạnh của Minio, Pyspark và Polars để thực hiện clean và transform. Cuối cùng sử dụng streamlit để visualize và analyze data
+Trong dự án này, nhóm mình sẽ minh họa rõ ràng và chi tiết các quy trình thực hiện `ETL` trên tập dữ liệu `TLC Trip Record Data` - một tập dữ liệu mở, phục vụ cho việc học tập và nghiên cứu.
 
 ### 2. Data Sources
 
-`NYC-TripRecord` được chọn lọc từ tập dataset chính thức của `TLC-TripRecord`.
+`NYC-TripRecord` được chọn lọc từ tập dataset chính thức tại `TLC Trip Record Data`.
 Dữ liệu bao gồm:
 
--   Yellow Taxi Trip Records: chứa các thuộc tính - pick-up and drop-off dates/times, pick-up and drop-off locations, trip distances, itemized fares, rate types, payment types, and driver-reported passenger counts.
--   Green Taxi Trip Records: chứa các thuộc tính - pick-up and drop-off dates/times, pick-up and drop-off locations, trip distances, itemized fares, rate types, payment types, and driver-reported passenger counts, store and forward flags.
--   For_Hire Vehicle Trip Records (FHV Trip Records): chứa các thuộc tính - pick-up and drop-off dates/times, pick-up and drop-off locations, Dispatching-base-number (base license number) .
+-   Yellow Taxi Trip Records: Đây là điều mọi người nghĩ đến khi nhắc về taxi ở New York. Chiếc taxi mang tính biểu tượng là tiêu chuẩn trong vận chuyển ô tô ở New York. Xe taxi màu vàng là phương tiện duy nhất được phép đón khách ở mọi nơi trong thành phố.
+-   Green Taxi Trip Records: Xe xanh có thể thả bạn đi bất cứ đâu nhưng chỉ được phép đón khách ở những khu vực nhất định. 
+-   For_Hire Vehicle Trip Records (FHV Trip Records): Là những taxi chủ yếu được sử dụng cho chuyến đi được sắp xếp trước. 
+  
+Dữ liệu được sử dụng trong project:
 
-The dataset used
-
--   3 months (January - March / 2022) -
+-   1 months (January / 2023)
 -   Taxi Zone Shapefile - https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip
 
 > **TLC Trip Record Data:**
@@ -34,7 +30,9 @@ The dataset used
 > Link website: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 >
 > Data Dictionary:
-> https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf > https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_green.pdf > https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_fhv.pdf
+> https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf
+> https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_green.pdf
+> https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_fhv.pdf
 
 ## II. Architecture
 
