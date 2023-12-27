@@ -8,7 +8,7 @@
 
 ### 1. The goals of project
 
-Với mục tiêu tìm hiểu và học tập về data engineering và big data, nhóm đã thực hiện project NYC Taxi TripRecord. Project tập chung vào quá trình ETL từ database (Mysql) đến datawarehouse (Psql), đồng thời tận dụng sức mạnh của Minio, Pyspark và Polars để thực hiện clean và transform. Cuối cùng sử dụng streamlit để visualize và analyze data
+Với mục tiêu tìm hiểu và học tập về data engineering và big data, nhóm đã thực hiện project NYC Taxi TripRecord. Project tập chung vào quá trình ETL từ database (MySQL) đến datawarehouse (Psql), đồng thời tận dụng sức mạnh của Minio, Pyspark và Polars để thực hiện clean và transform. Cuối cùng sử dụng streamlit để visualize và analyze data
 Trong dự án này, nhóm mình sẽ minh họa rõ ràng và chi tiết các quy trình thực hiện `ETL` trên tập dữ liệu `TLC Trip Record Data` - một tập dữ liệu mở, phục vụ cho việc học tập và nghiên cứu.
 
 ### 2. Data Sources
@@ -46,9 +46,9 @@ Chi tiết:
 -   `dagster_home`: Dagit and dagster daemno's configurations
 -   `dockerimages`: self-built docker images, such as dagster (for dagit + daemon), spark master,...
 -   `etl_pipeline`: pipeline
--   `load_dataset`: include files have `.sql` to create schema và and load đata to `MySQL, Postgres`
+-   `load_dataset`: include files have `.sql` to create schema and load đata to `MySQL, Postgres`
 -   `minio`: Docker container for MinIO
--   `mysql`: Docker container for Mysql
+-   `MySQL`: Docker container for MySQL
 -   `postgresql`: Docker container for Psql
 -   `Test`: folder to test and EDA
 -   `.gitugnore + .gitattributes`: Code versioning
@@ -60,12 +60,15 @@ Chi tiết:
 
 ![](images/design_pipeline.png)
 
-### 2. Containerize the application with `Docker` and orchestrate assets with `Dagster`.
+### 2. Database
 
-### 3. Bronze layer
+![](images/db_schema.png)
 
-![](images/bronze.png)
-Một vài xử lí nhỏ khi đọc file `taxizones.shp` để load các dữ liệu về kinh độ và vĩ độ
+yellow_record, green_record, fhv_record: có data dictionary như đã mô tả ở trên
+
+long_lat: là 1 table chứa kinh độ, vĩ độ, tương ứng với các LocationID
+
+Một vài xử lí nhỏ khi đọc file `taxizones.shp` để load các data về kinh độ, vĩ độ đưa vào trong database (MySQL)
 
 Sử dụng thư viện `GeoPandas` and `PyProj` và chuyển đổi từ `shapefile format` thành một `DataFrame`
 
@@ -78,38 +81,59 @@ Sử dụng thư viện `GeoPandas` and `PyProj` và chuyển đổi từ `shape
         target_crs = 'EPSG:4326'  # WGS84 - lat/lon CRS
 
         # Create a PyProj transformer
-transformer = pyproj.Transformer.from_crs(source_crs, target_crs, always_xy=True)
+        transformer = pyproj.Transformer.from_crs(source_crs, target_crs, always_xy=True)
 
         gdf['longitude'] = gdf.geometry.centroid.x
         gdf['latitude'] = gdf.geometry.centroid.y
-gdf['longitude'], gdf['latitude'] = transformer.transform(gdf['longitude'], gdf['latitude'])
+        gdf['longitude'], gdf['latitude'] = transformer.transform(gdf['longitude'], gdf['latitude'])
 
         df = pl.DataFrame(gdf[['LocationID', 'longitude', 'latitude']])
         ```
 
+### 3. Bronze layer
+
+![](images/bronze.png)
+
+Tại các asset trên layer này, ta sẽ sử dụng Polars để thực hiện đọc data trên database (MySQL) và đưa vào folder bronze_layer trên lakehouse (MinIO) 
+
 Bao gồm các assets:
 
--   bronze_yellow_record: chứa data về yellow taxi NYC raw được lấy trực tiếp từ trang web
--   bronze_green_record: chứa data về green taxi NYC raw được lấy trực tiếp từ trang web
--   bronze_fhv_record: chứa data về fhv taxi NYC raw được lấy trực tiếp từ trang web
+-   bronze_yellow_record: là table `yellow_record` từ MySQL, bởi vì data quá lớn với số lượng dòng khoảng 3.5 triệu dòng, nên asset này sẽ được thực hiện partition ra theo tuần
+-   bronze_green_record: là table `green_record` từ MySQL, chỉ khoảng 65000 dòng 
+-   bronze_fhv_record: là table `fhv_record` từ MySQL, khoảng 1000000 dòng, nên cũng sẽ parition tương tự `bronze_yellow_record`
 -   bronze_long_lat: chứa data về các kinh độ vĩ độ ở khu vực các taxi có thể đến
 
 ### 4. Silver layer
 
+Silver FHV: Data cleaning và transform từ upstream asset là `bronze_fhv_record`, tại các assets này thực hiện tách `bronze_fhv_record` ra thành các asset:
+
+-   silver_fhv_dropoff: chứa các thông tin về thời gian và địa điểm khách xuống xe của các fhv taxi
+-   silver_fhv_pickup: tương tự là các thông tin về thời gian địa điểm đón khách
+-   silver_fhv_info: là thông tin về chuyến đi như quảng đường, số hành khác, ...
+
 ![](images/silver1.png)
 
--   Sivler FHV.
+Silver yellow: Data cleaning và transform từ upstream asset là `bronze_yellow_record`, tại các assets này thực hiện tách `bronze_yellow_record` ra thành các asset:
+
+-   silver_yellow_dropoff: chứa các thông tin về thời gian và địa điểm khách xuống xe của các taxi
+-   silver_yellow_pickup: tương tự là các thông tin về thời gian địa điểm đón khách
+-   silver_yellow_payment: Là thông tin về các chi phí như là phí xe, phụ phí, tips, ...
+-   silver_yellow_info: là thông tin về chuyến đi như quảng đường, số hành khách, ...
 
 ![](images/silver2.png)
 
--   Silver Yellow.
+Silver green: Data cleaning và transform từ upstream asset là `bronze_green_record`, tại các assets này thực hiện tách `bronze_green_record` ra thành các asset:
+
+-   silver_green_dropoff: chứa các thông tin về thời gian và địa điểm khách xuống xe của các taxi
+-   silver_green_pickup: tương tự là các thông tin về thời gian địa điểm đón khách
+-   silver_green_payment: Là thông tin về các chi phí như là phí xe, phụ phí, tips, ...
+-   silver_green_info: là thông tin về chuyến đi như quảng đường, số hành khách, ...
+
+Bên trong mỗi asset thực hiện cài đặt ID thích hợp, khử trừng lặp, xóa bớt null và các giá trị chưa thích hợp.
 
 ![](images/silver3.png)
 
--   Silver Green.
-
-Đây là bước xử lý data đã có được từ bronze layer.
-Bao gồm các assets:
+Và sau khi xử lý ta có được
 
 -   `Yellow`
     -   silver_yellow_pickup: PickUpID, Pickup_datetime, PULocationID
@@ -126,37 +150,43 @@ Bao gồm các assets:
     -   silver_fhv_dropoff: DropOffID, Dropoff_datetime, DOLocationID
     -   silver_fhvinfo: PickUpID, DropOffID, Dispatch_base_num, SR_Flag, Affiliated_base_number
 
-### 5. Goal layer
+### 5. Gold layer
 
 ![](images/gold.png)
 
-Bao gồm các assets:
+Bao gồm các assets được gộp và transform từ các upstream như sau:
 
 -   `gold_pickup` = silver_yellow_pickup + silver_green_pickup + silver_fhv_pickup + bronze_long_lat
 -   `gold_dropoff` = silver_yellow_dropoff + silver_green_dropoff + silver_fhv_dropoff + bronze_long_lat
 -   `gold_payment` = silver_yellow_payment + silver_green_payment
--   `gold_tripinfo` = silver_yellow_tripinfo + silver_green_tripinfo
+-   `gold_tripinfo` = silver_yellow_tripinfo + silver_green_tripinfo : vì cấu trúc table của silver_yellow_tripinfo, silver_green_tripinfo khác với silver_fhv_tripinfo nên nhóm chỉ thực hiện gom của yellow và green và giữ nguyên fhv_info
 
 ### 6. Warehouse layer
 
 ![](images/warehouse.png)
 
-    - warehouse_pickup = gold_pickup
-    - warehouse_dropoff = gold_dropoff
-    - warehouse_payment = gold_payment
-    - warehouse_tripinfo = gold_tripinfo
-    - warehouse_fhvinfo = silver_fhvinfo
+Tại warehouse_layer
 
--   Dữ liệu từ `gold_layer` và `silver_fhvinfo` sẽ được tải lên `Postgres` để lưu trữ và xử lí truong tương lai.
+-   warehouse_pickup = gold_pickup
+-   warehouse_dropoff = gold_dropoff
+-   warehouse_payment = gold_payment
+-   warehouse_tripinfo = gold_tripinfo
+-   warehouse_fhvinfo = silver_fhvinfo
 
-### 7. Visualize the data
+-   Dữ liệu từ `gold_layer` và `silver_fhvinfo` sẽ được tải lên data warehouse `Postgres` để lưu trữ và sử dụng sau khi đã được xử lý trong pipeline
+
+![](images/wh_schema.png)
+
+-   Table trong `Postgres` sau pipeline
+
+### 7. Data Lineage
+
+![](images/general.png)
+
+## III. Visualize the data
 
 -   Sử dụng `Streamlit Library` để visualize các dữ liệu
 -   Dữ liệu được visualize được `connect` đến `Postgres` để lấy dữ liệu và chuyển đổi xử lí theo như mong muốn
-
-## III. Data Lineage
-
-![](images/general.png)
 
 ## IV. Result - Visualize
 
