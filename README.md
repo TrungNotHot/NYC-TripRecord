@@ -183,11 +183,16 @@ Tại warehouse_layer
 
 ![](images/general.png)
 
-## III. Visualize the data
+## III. Demo
+
+Demo link: https://studenthcmusedu-my.sharepoint.com/personal/21280012_student_hcmus_edu_vn/_layouts/15/stream.aspx?id=%2Fpersonal%2F21280012%5Fstudent%5Fhcmus%5Fedu%5Fvn%2FDocuments%2FDE%2Fdemo%2Emp4&referrer=StreamWebApp%2EWeb&referrerScenario=AddressBarCopied%2Eview
+
+## IV. Result and visualize
 
 -   Sử dụng `Streamlit Library` để visualize các dữ liệu
 -   Dữ liệu được visualize được `connect` đến `Postgres` để lấy dữ liệu và chuyển đổi xử lí theo như mong muốn
 
-## IV. Result - Visualize
-
 ![](images/result.png)
+
+
+
