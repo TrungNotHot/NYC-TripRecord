@@ -1,14 +1,14 @@
-# NYC taxi tripRecord ETL-pipeline
+# NYC Taxi Trip Record ETL-pipeline
 
 ## _New York City (NYC)_
 
 ![](images/taxi.png)
 
-## I. Giới thiệu
+## I. Introduce
 
 ### 1. The goals of project
 
-Với mục tiêu tìm hiểu và học tập về data engineering và big data, nhóm đã thực hiện project NYC taxi tripRecord. Project tập chung vào quá trình ETL từ database (Mysql) đến datawarehouse (Psql), đồng thời tận dụng sức mạnh của Minio, Pyspark và Polars để thực hiện clean và transform. Cuối cùng sử dụng streamlit để visualize và analyze data
+Với mục tiêu tìm hiểu và học tập về data engineering và big data, nhóm đã thực hiện project NYC Taxi TripRecord. Project tập chung vào quá trình ETL từ database (Mysql) đến datawarehouse (Psql), đồng thời tận dụng sức mạnh của Minio, Pyspark và Polars để thực hiện clean và transform. Cuối cùng sử dụng streamlit để visualize và analyze data
 Trong dự án này, nhóm mình sẽ minh họa rõ ràng và chi tiết các quy trình thực hiện `ETL` trên tập dữ liệu `TLC Trip Record Data` - một tập dữ liệu mở, phục vụ cho việc học tập và nghiên cứu.
 
 ### 2. Data Sources
@@ -22,7 +22,8 @@ For_Hire Vehicle Trip Records (FHV Trip Records): Là những taxi chủ yếu �
   
 Dữ liệu được sử dụng trong project:
 
-1 month (January 2023)
+1 tháng (January 2023) của TLC Trip Record Data
+
 Taxi Zone Shapefile: https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip
 
 > **TLC Trip Record Data:**
@@ -36,9 +37,9 @@ Link website: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 
 ## II. Architecture
 
-### 1. Overview
+### 1. Directory tree
 
-![](images/dicrectory_tree.png)
+![](images/Screenshot from 2023-12-28 00-34-53.png)
 Chi tiết:
 
 -   `app`: The UI's application written with `streamlit`
