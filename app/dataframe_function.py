@@ -132,7 +132,7 @@ def main(df,name_data):
         if name_data == "pickup":
             temp = df['PULocationID']
         else:
-            temp = df['LocationID']
+            temp = df['DOLocationID']
         # Tính toán bán kính dựa trên mức độ tập trung của vị trí
         min_concentration = temp.min()
         max_concentration = temp.max()

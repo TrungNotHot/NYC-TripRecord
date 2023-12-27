@@ -51,7 +51,7 @@ def load_data_from_postgres(start_date, end_date, drop_or_pick):
             sql_query = f"""
                 SELECT 
                     wd."Dropoff_datetime",
-                    wd."LocationID",
+                    wd."DOLocationID",
                     wd.longitude,
                     wd.latitude,
                     wp2.mta_tax,

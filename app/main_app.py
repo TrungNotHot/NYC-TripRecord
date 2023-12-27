@@ -7,12 +7,8 @@ import polars as pl
 
 from streamlit_option_menu import option_menu
 from query import *
-# from connect_postgres import load_data_from_postgres
-# from components.main import pickup, dropoff
 from dataframe_function import  main
 from connect_postgres import load_data_from_postgres
-
-
 
 
 
@@ -29,7 +25,7 @@ with st.sidebar:
     bucket = st.sidebar.selectbox("Choose Dataset on WareHouse ... " , {"None", "WareHouse"})
     if bucket != "None":
         st.sidebar.header("Please filter...")
-        # name_data_list = {"None", "PickUp", "DropOff", "Payment", "TripInfo", "FhvInfo"}
+
         name_your_data = st.sidebar.selectbox("Choose Dataset on Your Dataset ... " , {"PickUp", "DropOff"})
         name_your_data = name_your_data.lower()
 
@@ -38,24 +34,18 @@ with st.sidebar:
         jan_1 = datetime.date(year_current, 1, 1)
         feb_2 = datetime.date(year_current, 2, 28)
         date_from = st.date_input("From - To",(jan_1, datetime.date(year_current, 1, 10)),jan_1, feb_2,format="MM.DD.YYYY")
-        # print(date_from[0], type(date_from[1]))
+
     else:
         st.sidebar.markdown("##")
 
     bucket = bucket.lower()
-    # name_your_data = name_your_data.lower()
     table_name = bucket + "_" + name_your_data
-    # print(table_name)
 
-
-# print(test)
 def main1(df, name_data):
     if bucket != "none":
         if len(date_from) > 1:
             df = df.filter(df["longitude"].is_not_null() & df["latitude"].is_not_null())
         if not df.is_empty():  
-        #    pickup(df)
-            # dropoff(df)
             main(df, name_data)
         else:
             st.title("Không có nguồn dữ liệu để phân tích....")
