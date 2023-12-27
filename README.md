@@ -39,7 +39,7 @@ Link website: https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page
 
 ### 1. Directory tree
 
-![](images/Screenshot from 2023-12-28 00-34-53.png)
+![](images/directory_tree.png)
 Chi tiết:
 
 -   `app`: The UI's application written with `streamlit`
