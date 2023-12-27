@@ -13,3 +13,13 @@ pyspark==3.3.3
 pytz==2022.7.1
 pydantic==1.10.12
 pendulum==2.1.2
+fastparquet
+streamlit
+plotly
+streamlit_option_menu
+query
+geopandas
+pyproj
+folium
+streamlit_extras
+datetime
